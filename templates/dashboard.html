@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RSS Bot — Админка</title>
+<style>
+:root{--bg:#0f1115;--card:#1a1d24;--card2:#22262f;--txt:#e8eaf0;--mut:#9aa0b0;--acc:#5865F2;--ok:#3ba55c;--err:#ed4245;--warn:#faa81a}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--txt);font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh}
+header{background:linear-gradient(135deg,#5865F2,#9b59b6);padding:22px 28px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+header h1{font-size:22px}header p{opacity:.85;font-size:13px}
+.badge{background:rgba(255,255,255,.2);padding:4px 12px;border-radius:20px;font-size:12px}
+.wrap{max-width:1100px;margin:0 auto;padding:24px 16px 60px}
+.tabs{display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap}
+.tab{background:var(--card);border:1px solid #2c313d;color:var(--txt);padding:10px 20px;border-radius:10px;cursor:pointer;font-size:14px}
+.tab.active{background:var(--acc);border-color:var(--acc)}
+.card{background:var(--card);border:1px solid #2c313d;border-radius:14px;padding:20px;margin-bottom:16px}
+.card h3{margin-bottom:12px;font-size:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px}
+.feed{background:var(--card2);border:1px solid #333947;border-radius:12px;padding:16px;position:relative}
+.feed .dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
+.feed h4{font-size:15px;margin:6px 0;word-break:break-word}
+.feed small{color:var(--mut);word-break:break-all}
+.feed .row{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+button,.btn{background:var(--acc);color:#fff;border:none;padding:9px 16px;border-radius:8px;cursor:pointer;font-size:13px}
+button:hover{opacity:.9}button.ghost{background:#2c313d}button.danger{background:var(--err)}button.ok{background:var(--ok)}
+input,select,textarea{width:100%;background:#10131a;border:1px solid #333947;color:var(--txt);padding:10px 12px;border-radius:8px;font-size:14px;margin-top:4px}
+label{font-size:13px;color:var(--mut);display:block;margin-top:12px}
+textarea{min-height:90px;resize:vertical;font-family:inherit}
+.modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:50;align-items:flex-start;justify-content:center;padding:30px 12px;overflow:auto}
+.modal.open{display:flex}
+.modal .box{background:var(--card);border-radius:14px;padding:24px;max-width:620px;width:100%}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){.two{grid-template-columns:1fr}}
+.check{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:14px}
+.check input{width:auto}
+#login{max-width:380px;margin:80px auto}
+.log{background:#0b0d11;border-radius:8px;padding:12px;font-family:Consolas,monospace;font-size:12px;max-height:380px;overflow:auto;white-space:pre-wrap}
+.log .ERROR{color:var(--err)}.log .WARN{color:var(--warn)}.log .INFO{color:#7dd87d}
+.preview-item{border-left:3px solid var(--acc);padding:10px 12px;margin:8px 0;background:#10131a;border-radius:0 8px 8px 0}
+.preview-item.filtered{border-color:var(--warn);opacity:.6}
+.embed-demo{background:#2b2d31;border-left:4px solid #5865F2;border-radius:4px 8px 8px 4px;padding:12px;margin-top:8px}
+.embed-demo b{color:#fff}.embed-demo p{color:#dbdee1;font-size:13px;margin:6px 0}
+.embed-demo img{max-width:100%;border-radius:8px;margin-top:8px}
+.hidden{display:none!important}
+.hint{font-size:12px;color:var(--mut);margin-top:4px}
+.topbar{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+</style>
+</head>
+<body>
+<header>
+<div><h1>🤖 RSS Bot — Админка</h1><p>Форум RSS → Discord · красивые embed-посты</p></div>
+<div style="display:flex;gap:8px;align-items:center"><span class="badge" id="statusBadge">…</span><button class="ghost" onclick="logout()" style="background:rgba(255,255,255,.2)">Выйти</button></div>
+</header>
+
+<div class="wrap">
+<!-- LOGIN -->
+<div id="login" class="card">
+<h3>🔐 Вход</h3>
+<p class="hint">Пароль из config.json → web.password (по умолчанию admin123)</p>
+<label>Пароль<input type="password" id="pwd" placeholder="admin123" onkeydown="if(event.key==='Enter')doLogin()"></label>
+<button onclick="doLogin()" style="margin-top:14px;width:100%">Войти</button>
+<p id="loginErr" style="color:var(--err);margin-top:8px;font-size:13px"></p>
+</div>
+
+<!-- MAIN -->
+<div id="main" class="hidden">
+<div class="tabs">
+<button class="tab active" onclick="tab('feeds',this)">📡 Ленты</button>
+<button class="tab" onclick="tab('settings',this)">⚙️ Настройки</button>
+<button class="tab" onclick="tab('logs',this)">📋 Логи</button>
+</div>
+
+<div id="tab-feeds">
+<div class="topbar"><button onclick="openModal()">＋ Добавить ленту</button><button class="ghost" onclick="loadAll()">↻ Обновить</button></div>
+<div id="feeds" class="grid"></div>
+</div>
+
+<div id="tab-settings" class="hidden">
+<div class="card"><h3>⚙️ Глобальные настройки</h3>
+<div class="two">
+<div><label>Интервал проверки по умолчанию (сек)<input id="s_interval" type="number" min="60" value="300"></label></div>
+<div><label>Длина описания в посте (символов)<input id="s_maxlen" type="number" min="50" max="2000" value="300"></label></div>
+</div>
+<label>Guild ID (сервер для быстрых слэш-команд, необязательно)<input id="s_guild" placeholder="123456..."></label>
+<div class="two">
+<div><label>Веб-порт<input id="s_port" type="number" value="8000"></label></div>
+<div><label>Пароль админки<input id="s_webpwd" placeholder="admin123"></label></div>
+</div>
+<label>Новый Discord-токен (пусто = не менять)<input id="s_token" placeholder="••••••"></label>
+<button class="ok" onclick="saveSettings()" style="margin-top:14px">💾 Сохранить</button>
+<p class="hint">Переменные шаблона: {title} {link} {author} {summary} {date} {feed_name} {tags}<br>
+Чтобы узнать ID канала: Discord → Настройки → Расширенные → Режим разработчика → ПКМ по каналу → Копировать ID.<br>
+Упоминание: оставь пусто, или <b>@everyone</b>, или <b>&lt;@&amp;ID_роли&gt;</b>.</p>
+</div>
+</div>
+
+<div id="tab-logs" class="hidden">
+<div class="card"><h3>📋 Последние события <button class="ghost" onclick="loadLogs()" style="float:right">↻</button></h3><div id="logs" class="log">…</div></div>
+</div>
+</div>
+</div>
+
+<!-- MODAL -->
+<div class="modal" id="modal"><div class="box">
+<h3 id="m_title">Новая лента</h3>
+<input type="hidden" id="f_id">
+<label>Название<input id="f_name" placeholder="Новости форума"></label>
+<label>RSS URL<input id="f_url" placeholder="https://forum.example.ru/feed"></label>
+<label>ID Discord-канала<input id="f_channel" placeholder="123456789012345678"></label>
+<div class="two">
+<div><label>Цвет embed<input id="f_color" type="color" value="#5865f2" style="height:42px"></label></div>
+<div><label>Интервал (сек, 0 = общий)<input id="f_interval" type="number" min="0" value="0"></label></div>
+</div>
+<label>Шаблон сообщения<textarea id="f_template">📰 **{title}**
+👤 {author} · 🕒 {date}
+
+{summary}
+
+🔗 {link}</textarea></label>
+<div class="two">
+<div><label>Упоминание<input id="f_mention" placeholder="@everyone или пусто"></label></div>
+<div><label>Макс. постов за проверку<input id="f_max" type="number" min="1" max="10" value="3"></label></div>
+</div>
+<label>Включая ключевые слова (через запятую, пусто = все)<input id="f_inc" placeholder="релиз, обновление"></label>
+<label>Исключая слова<input id="f_exc" placeholder="флуд, оффтоп"></label>
+<div class="check"><input type="checkbox" id="f_enabled" checked> Включена</div>
+<div class="check"><input type="checkbox" id="f_embed" checked> Красивый embed</div>
+<div class="check"><input type="checkbox" id="f_img" checked> Показывать картинку</div>
+<div class="check"><input type="checkbox" id="f_author" checked> Показывать автора</div>
+<div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
+<button class="ok" onclick="saveFeed()">💾 Сохранить</button>
+<button class="ghost" onclick="closeModal()">Отмена</button>
+</div>
+<div id="preview" style="margin-top:14px"></div>
+</div></div>
+
+<script>
+let TOKEN = localStorage.getItem('rss_admin_token') || '';
+function api(path, method='GET', body){
+  return fetch(path, {method, headers:{'Content-Type':'application/json','X-Admin-Token':TOKEN}, body: body?JSON.stringify(body):undefined}).then(r=>r.json());
+}
+if(TOKEN) showMain(); else document.getElementById('login').style.display='block';
+async function doLogin(){
+  const pwd = document.getElementById('pwd').value;
+  const r = await fetch('/api/login',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({password:pwd})}).then(r=>r.json());
+  if(r.ok){ TOKEN = pwd; localStorage.setItem('rss_admin_token', pwd); showMain(); }
+  else document.getElementById('loginErr').textContent = 'Неверный пароль';
+}
+function logout(){ localStorage.removeItem('rss_admin_token'); location.reload(); }
+function showMain(){ document.getElementById('login').style.display='none'; document.getElementById('main').classList.remove('hidden'); loadAll(); }
+function tab(name, el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active');
+  ['feeds','settings','logs'].forEach(n=>document.getElementById('tab-'+n).classList.toggle('hidden', n!==name));
+  if(name==='logs') loadLogs(); if(name==='settings') loadSettings(); }
+async function loadAll(){ await Promise.all([loadFeeds(), loadStatus()]); }
+async function loadStatus(){
+  const r = await api('/api/status');
+  const b = document.getElementById('statusBadge');
+  if(!r.ok){ b.textContent='⛔ Нет доступа'; return; }
+  b.textContent = (r.bot_online? '🟢 Бот онлайн':'🔴 Бот офлайн') + ` · лент: ${r.feeds_count}`;
+}
+async function loadFeeds(){
+  const r = await api('/api/feeds');
+  const box = document.getElementById('feeds');
+  if(!r.ok){ box.innerHTML='<p>Ошибка: '+r.error+'</p>'; return; }
+  if(!r.feeds.length){ box.innerHTML='<div class="card">📭 Лент пока нет. Нажми «Добавить ленту».</div>'; return; }
+  box.innerHTML = r.feeds.map(f=>`
+    <div class="feed">
+      <span class="dot" style="background:${f.enabled?'#3ba55c':'#555'}"></span>
+      <small>${f.id} · каждые ${f.interval_sec||'общ.'}с · макс ${f.max_posts}</small>
+      <h4>${esc(f.name)}</h4>
+      <small>📰 ${esc(f.rss_url)}<br>💬 канал ${esc(f.channel_id)} ${f.mention?('· '+esc(f.mention)):''}</small>
+      <div class="row">
+        <button onclick="editFeed('${f.id}')">✏️</button>
+        <button class="ghost" onclick="previewFeed('${f.id}')">👁</button>
+        <button class="ok" onclick="testFeed('${f.id}')">📤 Тест</button>
+        <button class="ghost" onclick="toggleFeed('${f.id}', ${!f.enabled})">${f.enabled?'⏸':'▶️'}</button>
+        <button class="danger" onclick="delFeed('${f.id}')">🗑</button>
+      </div>
+      <div id="pv-${f.id}"></div>
+    </div>`).join('');
+  window._feeds = Object.fromEntries(r.feeds.map(f=>[f.id,f]));
+}
+function esc(s){ return String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function openModal(){ document.getElementById('m_title').textContent='Новая лента'; ['f_id','f_name','f_url','f_channel','f_mention','f_inc','f_exc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('preview').innerHTML=''; document.getElementById('modal').classList.add('open'); }
+function closeModal(){ document.getElementById('modal').classList.remove('open'); }
+function editFeed(id){ const f = window._feeds[id]; if(!f) return;
+  document.getElementById('m_title').textContent='Редактировать ленту';
+  document.getElementById('f_id').value=f.id; document.getElementById('f_name').value=f.name||'';
+  document.getElementById('f_url').value=f.rss_url||''; document.getElementById('f_channel').value=f.channel_id||'';
+  document.getElementById('f_color').value=f.color||'#5865f2'; document.getElementById('f_interval').value=f.interval_sec||0;
+  document.getElementById('f_template').value=f.template||''; document.getElementById('f_mention').value=f.mention||'';
+  document.getElementById('f_max').value=f.max_posts||3; document.getElementById('f_inc').value=f.include_keywords||'';
+  document.getElementById('f_exc').value=f.exclude_keywords||'';
+  document.getElementById('f_enabled').checked=!!f.enabled; document.getElementById('f_embed').checked=!!f.use_embed;
+  document.getElementById('f_img').checked=!!f.show_image; document.getElementById('f_author').checked=!!f.show_author;
+  document.getElementById('preview').innerHTML=''; document.getElementById('modal').classList.add('open'); }
+async function saveFeed(){
+  const id = document.getElementById('f_id').value;
+  const body = {name:val('f_name'), rss_url:val('f_url'), channel_id:val('f_channel'),
+    color:val('f_color'), interval_sec:+val('f_interval')||0, template:document.getElementById('f_template').value,
+    mention:val('f_mention'), max_posts:+val('f_max')||3, include_keywords:val('f_inc'), exclude_keywords:val('f_exc'),
+    enabled:document.getElementById('f_enabled').checked, use_embed:document.getElementById('f_embed').checked,
+    show_image:document.getElementById('f_img').checked, show_author:document.getElementById('f_author').checked};
+  const r = id? await api('/api/feeds/'+id,'PUT',body) : await api('/api/feeds','POST',body);
+  if(!r.ok){ alert('Ошибка: '+r.error); return; }
+  closeModal(); loadFeeds();
+}
+function val(id){ return document.getElementById(id).value.trim(); }
+async function toggleFeed(id, en){ const r = await api('/api/feeds/'+id,'PUT',{enabled:en}); if(r.ok) loadFeeds(); }
+async function delFeed(id){ if(!confirm('Удалить ленту '+id+'?')) return; const r = await api('/api/feeds/'+id,'DELETE'); if(r.ok) loadFeeds(); }
+async function previewFeed(id){
+  const box = document.getElementById('pv-'+id); box.innerHTML='⏳ Читаю RSS…';
+  const r = await api('/api/feeds/'+id+'/preview','POST');
+  if(!r.ok){ box.innerHTML='❌ '+esc(r.error); return; }
+  box.innerHTML = (r.warning?'<p class="hint">⚠️ '+esc(r.warning)+'</p>':'') + r.items.slice(0,3).map(it=>`
+    <div class="preview-item ${it.passes_filter?'':'filtered'}">
+      <b>${esc(it.title)}</b>${it.passes_filter?'':' <small>(отфильтровано)</small>'}<br>
+      <small>${esc(it.author)} · ${esc(it.date)} · <a href="${esc(it.link)}" target="_blank" style="color:#88aaff">ссылка</a></small>
+      <div class="embed-demo" style="border-color:${document.getElementById('f_color')?.value||'#5865F2'}">
+        <b>${esc(it.title)}</b><p>${esc(it.summary)}</p>${it.image?`<img src="${esc(it.image)}">`:''}
+      </div></div>`).join('') || '<p class="hint">Лента пустая</p>';
+}
+async function testFeed(id){ if(!confirm('Отправить свежую запись в Discord?')) return;
+  const r = await api('/api/feeds/'+id+'/test','POST'); alert(r.ok? '✅ Отправлено: '+r.posted : '❌ '+r.error); }
+async function loadSettings(){ const r = await api('/api/config'); if(!r.ok) return;
+  document.getElementById('s_interval').value=r.config.default_interval||300;
+  document.getElementById('s_maxlen').value=r.config.max_summary_length||300;
+  document.getElementById('s_guild').value=r.config.guild_id||'';
+  document.getElementById('s_port').value=r.config.web?.port||8000;
+  document.getElementById('s_webpwd').value=''; }
+async function saveSettings(){ const body={default_interval:+document.getElementById('s_interval').value||300,
+  max_summary_length:+document.getElementById('s_maxlen').value||300, guild_id:document.getElementById('s_guild').value.trim()||null,
+  web:{port:+document.getElementById('s_port').value||8000}};
+  const wp=document.getElementById('s_webpwd').value.trim(); if(wp) body.web.password=wp;
+  const tk=document.getElementById('s_token').value.trim(); if(tk) body.discord_token=tk;
+  const r = await api('/api/config','PUT',body); alert(r.ok?'✅ Сохранено. Порт/токен применятся после перезапуска.':'❌ '+r.error); }
+async function loadLogs(){ const r = await api('/api/logs'); const box=document.getElementById('logs');
+  if(!r.ok){ box.textContent='Ошибка доступа'; return; }
+  box.innerHTML = r.logs.slice().reverse().map(l=>`<span class="${l.level}">[${l.time}] [${l.level}] ${esc(l.feed)} ${esc(l.msg)}</span>`).join('\n') || 'Пока пусто'; }
+</script>
+</body>
+</html>

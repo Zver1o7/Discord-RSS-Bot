@@ -1,0 +1,30 @@
+{
+  "discord_token": "ВСТАВЬ_ТОКЕН_СЮДА",
+  "guild_id": null,
+  "default_interval": 300,
+  "max_summary_length": 300,
+  "web": {
+    "enabled": true,
+    "port": 8000,
+    "password": "admin123"
+  },
+  "feeds": [
+    {
+      "id": "feed_example",
+      "name": "Новости форума",
+      "rss_url": "https://example-forum.ru/feed",
+      "channel_id": "123456789012345678",
+      "enabled": true,
+      "interval_sec": 0,
+      "color": "#5865F2",
+      "template": "📰 **{title}**\n👤 {author} · 🕒 {date}\n\n{summary}\n\n🔗 {link}",
+      "use_embed": true,
+      "show_image": true,
+      "show_author": true,
+      "mention": "",
+      "include_keywords": "",
+      "exclude_keywords": "",
+      "max_posts": 3
+    }
+  ]
+}
