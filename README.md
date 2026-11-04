@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="docs/banner.svg" alt="Discord RSS Bot" width="100%">
+</p>
+
 # Discord RSS Bot
 
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
