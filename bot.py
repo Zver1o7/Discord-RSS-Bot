@@ -264,6 +264,71 @@ def build_bot() -> RSSBot:
         n = await check_feed(bot, feed)
         await inter.followup.send(f"✅ Проверка готова. Опубликовано: **{n}**.", ephemeral=True)
 
+    @bot.tree.command(name="rss-info", description="Информация о ленте")
+    @app_commands.describe(feed_id="ID ленты (смотри /rss-list)")
+    async def rss_info(inter: discord.Interaction, feed_id: str) -> None:
+        cfg = core.load_config()
+        feed = core.get_feed(cfg, feed_id)
+        if not feed:
+            await inter.response.send_message("❌ Лента не найдена.", ephemeral=True)
+            return
+        enabled = "🟢 Включена" if feed.get("enabled", True) else "⚪ Выключена"
+        iv = feed.get("interval_sec") or cfg.get("default_interval") or 300
+        inc = feed.get("include_keywords") or "—"
+        exc = feed.get("exclude_keywords") or "—"
+        emb = discord.Embed(title=f"📡 {feed.get('name')}", color=0x5865F2)
+        emb.add_field(name="ID", value=f"`{feed.get('id')}`", inline=True)
+        emb.add_field(name="Статус", value=enabled, inline=True)
+        emb.add_field(name="Канал", value=f"<#{feed.get('channel_id')}>", inline=True)
+        emb.add_field(name="RSS", value=f"[Открыть]({feed.get('rss_url')})", inline=False)
+        emb.add_field(name="Интервал", value=f"{iv} сек", inline=True)
+        emb.add_field(name="Embed", value="Да" if feed.get("use_embed", True) else "Нет", inline=True)
+        emb.add_field(name="Фильтр «включить»", value=inc, inline=False)
+        emb.add_field(name="Фильтр «исключить»", value=exc, inline=False)
+        emb.set_footer(text=f"by {core.__author__}")
+        await inter.response.send_message(embed=emb, ephemeral=True)
+
+    @bot.tree.command(name="rss-toggle", description="Включить/выключить ленту")
+    @app_commands.describe(feed_id="ID ленты (смотри /rss-list)")
+    async def rss_toggle(inter: discord.Interaction, feed_id: str) -> None:
+        if not inter.user.guild_permissions.manage_guild:
+            await inter.response.send_message("⛔ Нужны права «Управление сервером».", ephemeral=True)
+            return
+        cfg = core.load_config()
+        feed = core.get_feed(cfg, feed_id)
+        if not feed:
+            await inter.response.send_message("❌ Лента не найдена.", ephemeral=True)
+            return
+        feed["enabled"] = not bool(feed.get("enabled", True))
+        core.save_config(cfg)
+        state = "включена" if feed["enabled"] else "выключена"
+        await inter.response.send_message(f"✅ Лента **{feed.get('name')}** {state}.", ephemeral=True)
+        core.log_event("INFO", f"Лента {state} через /rss-toggle", feed_id)
+
+    @bot.tree.command(name="rss-test", description="Тестовый пост свежей записи из ленты")
+    @app_commands.describe(feed_id="ID ленты (смотри /rss-list)")
+    async def rss_test_cmd(inter: discord.Interaction, feed_id: str) -> None:
+        if not inter.user.guild_permissions.manage_guild:
+            await inter.response.send_message("⛔ Нужны права «Управление сервером».", ephemeral=True)
+            return
+        cfg = core.load_config()
+        feed = core.get_feed(cfg, feed_id)
+        if not feed:
+            await inter.response.send_message("❌ Лента не найдена.", ephemeral=True)
+            return
+        await inter.response.defer(ephemeral=True)
+        max_len = int(cfg.get("max_summary_length", 300) or 300)
+        items, err = core.fetch_feed_items(feed.get("rss_url", ""), feed.get("name", ""), max_len, 3)
+        if not items:
+            await inter.followup.send(f"❌ Не удалось получить записи. {err or ''}", ephemeral=True)
+            return
+        item = items[0]
+        ok = await post_item(bot, feed, item, reason="test")
+        if ok:
+            await inter.followup.send(f"✅ Тестовый пост отправлен: **{item['title'][:80]}**", ephemeral=True)
+        else:
+            await inter.followup.send("❌ Не удалось отправить пост. Проверь логи в веб-админке.", ephemeral=True)
+
     return bot
 
 
