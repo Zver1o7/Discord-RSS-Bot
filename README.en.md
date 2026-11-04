@@ -154,3 +154,12 @@ Ideas: multi-channel per feed, daily digest, reaction buttons, webhook mode, Doc
 ## 📄 License
 
 MIT — see [LICENSE](LICENSE).
+
+## 📸 Screenshots
+
+### Web Admin Panel
+![Web Admin Dashboard](docs/screenshots/web-admin-dashboard.svg)
+
+### Discord Embed Example
+![Discord Embed Example](docs/screenshots/discord-embed-example.svg)
+

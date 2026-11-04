@@ -232,3 +232,12 @@ PR и issue приветствуются. Стиль: стандартный Pyt
 ## 📄 License
 
 MIT — делай что хочешь, авторство сохрани. См. [LICENSE](LICENSE).
+
+## 📸 Скриншоты
+
+### Веб-админка
+![Веб-админка Discord RSS Bot](docs/screenshots/web-admin-dashboard.svg)
+
+### Пример embed-поста в Discord
+![Пример embed-поста Discord RSS Bot](docs/screenshots/discord-embed-example.svg)
+
