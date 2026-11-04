@@ -1,0 +1,56 @@
+<svg width="1400" height="900" viewBox="0 0 1400 900" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1b1d36"/>
+      <stop offset="100%" stop-color="#0f1026"/>
+    </linearGradient>
+    <linearGradient id="header" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#5865F2"/>
+      <stop offset="100%" stop-color="#7c3aed"/>
+    </linearGradient>
+  </defs>
+  <rect width="1400" height="900" fill="url(#bg)"/>
+  <rect width="1400" height="72" fill="url(#header)"/>
+  <circle cx="36" cy="36" r="18" fill="#fff" opacity=".15"/>
+  <text x="70" y="32" fill="#fff" font-family="Inter,Arial" font-size="16" font-weight="600">🤖 RSS Bot — Админка</text>
+  <text x="70" y="52" fill="#e9ebff" font-family="Inter,Arial" font-size="12">Форум RSS → Discord · красивые embed-посты · v1.0.0</text>
+  <rect x="1240" y="24" width="90" height="28" rx="14" fill="#22c55e"/>
+  <text x="1285" y="42" fill="#fff" font-family="Inter,Arial" font-size="11" text-anchor="middle">Онлайн</text>
+  <rect x="60" y="96" width="84" height="34" rx="10" fill="rgba(88,101,242,.35)"/>
+  <text x="102" y="118" fill="#e7e9ee" font-family="Inter,Arial" font-size="12" text-anchor="middle">📡 Ленты</text>
+  <text x="170" y="118" fill="#a9afc3" font-family="Inter,Arial" font-size="12">⚙️ Настройки</text>
+  <text x="264" y="118" fill="#a9afc3" font-family="Inter,Arial" font-size="12">📋 Логи</text>
+  <rect x="60" y="144" width="150" height="36" rx="12" fill="url(#header)"/>
+  <text x="135" y="167" fill="#fff" font-family="Inter,Arial" font-size="12" text-anchor="middle">＋ Добавить ленту</text>
+  <rect x="224" y="144" width="110" height="36" rx="12" fill="transparent" stroke="#2a2d4a"/>
+  <text x="279" y="167" fill="#e7e9ee" font-family="Inter,Arial" font-size="12" text-anchor="middle">↻ Обновить</text>
+  <rect x="60" y="200" width="620" height="290" rx="16" fill="#1d1f33" stroke="#2a2d4a"/>
+  <text x="86" y="236" fill="#e7e9ee" font-family="Inter,Arial" font-size="14" font-weight="600">📰 Новости форума</text>
+  <rect x="570" y="224" width="88" height="24" rx="12" fill="transparent" stroke="#2a2d4a"/>
+  <text x="614" y="240" fill="#a9afc3" font-family="Inter,Arial" font-size="11" text-anchor="middle">🟢 Включена</text>
+  <text x="86" y="270" fill="#a9afc3" font-family="Inter,Arial" font-size="12">Канал: <tspan fill="#e7e9ee">#rss-news</tspan>   Интервал: 5 мин   Embed: включён</text>
+  <rect x="86" y="292" width="568" height="120" rx="14" fill="#0f1026" stroke="#2a2d4a"/>
+  <circle cx="120" cy="352" r="19" fill="#5865F2"/>
+  <rect x="150" y="320" width="484" height="64" rx="10" fill="rgba(88,101,242,.18)" stroke="#5865F2" stroke-width="1"/>
+  <text x="170" y="344" fill="#e7e9ee" font-family="Inter,Arial" font-size="13" font-weight="600">Обновление правил форума</text>
+  <text x="170" y="366" fill="#a9afc3" font-family="Inter,Arial" font-size="12">Краткое описание свежей темы с превью содержимого...</text>
+  <text x="170" y="398" fill="#a9afc3" font-family="Inter,Arial" font-size="11">Новости форума · 12.11.2025</text>
+  <rect x="86" y="436" width="110" height="34" rx="10" fill="transparent" stroke="#2a2d4a"/>
+  <text x="141" y="457" fill="#e7e9ee" font-family="Inter,Arial" font-size="11" text-anchor="middle">Предпросмотр</text>
+  <rect x="210" y="436" width="126" height="34" rx="10" fill="transparent" stroke="#2a2d4a"/>
+  <text x="273" y="457" fill="#e7e9ee" font-family="Inter,Arial" font-size="11" text-anchor="middle">Тест в Discord</text>
+  <rect x="350" y="436" width="96" height="34" rx="10" fill="transparent" stroke="#2a2d4a"/>
+  <text x="398" y="457" fill="#e7e9ee" font-family="Inter,Arial" font-size="11" text-anchor="middle">Настроить</text>
+  <rect x="720" y="200" width="620" height="290" rx="16" fill="#1d1f33" stroke="#2a2d4a"/>
+  <text x="746" y="236" fill="#e7e9ee" font-family="Inter,Arial" font-size="14" font-weight="600">🎮 Обновления игр</text>
+  <rect x="1254" y="224" width="60" height="24" rx="12" fill="transparent" stroke="#2a2d4a"/>
+  <text x="1284" y="240" fill="#a9afc3" font-family="Inter,Arial" font-size="11" text-anchor="middle">Вкл</text>
+  <text x="746" y="270" fill="#a9afc3" font-family="Inter,Arial" font-size="12">Канал: <tspan fill="#e7e9ee">#game-updates</tspan>   Интервал: 10 мин   Фильтры: включены</text>
+  <rect x="746" y="292" width="568" height="120" rx="14" fill="#0f1026" stroke="#2a2d4a"/>
+  <circle cx="780" cy="352" r="19" fill="#22d3ee"/>
+  <rect x="810" y="320" width="484" height="64" rx="10" fill="rgba(34,211,238,.12)" stroke="#22d3ee" stroke-width="1"/>
+  <text x="830" y="344" fill="#e7e9ee" font-family="Inter,Arial" font-size="13" font-weight="600">Патч 1.12.4 — Список изменений</text>
+  <text x="830" y="366" fill="#a9afc3" font-family="Inter,Arial" font-size="12">Новые квесты, баланс, фиксы и многое другое...</text>
+  <text x="830" y="398" fill="#a9afc3" font-family="Inter,Arial" font-size="11">Обновления игр · 12.11.2025</text>
+  <text x="700" y="860" fill="#a9afc3" font-family="Inter,Arial" font-size="12" text-anchor="middle">Made with ❤️ by <tspan fill="#a9b4ff">Zver1o7</tspan> · GitHub · Issues · Releases</text>
+</svg>

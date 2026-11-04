@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>RSS Bot Web Admin Mockup</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1026;--panel:#16182a;--card:#1d1f33;--border:#2a2d4a;--text:#e7e9ee;--sub:#a9afc3;--accent:#5865F2;--ok:#22c55e;--warn:#f59e0b;--err:#ef4444;
+}
+*{box-sizing:border-box;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial}
+body{margin:0;background:radial-gradient(1200px 800px at 70% -10%,#24264a,#0f1026);color:var(--text)}
+header{display:flex;align-items:center;justify-content:space-between;padding:18px 28px;background:linear-gradient(90deg,rgba(88,101,242,.9),rgba(124,58,237,.7));box-shadow:0 10px 40px -20px #5865f2}
+header h1{margin:0;font-size:18px} header p{margin:2px 0 0;color:#e9ebff;font-size:13px}
+.badge{background:rgba(34,197,94,.9);padding:6px 10px;border-radius:999px;font-size:12px}
+.wrap{max-width:1100px;margin:26px auto;padding:0 18px}
+.tabs{display:flex;gap:10px;margin-bottom:16px}
+.tab{border:1px solid transparent;background:transparent;color:var(--sub);padding:8px 12px;border-radius:10px}
+.tab.active{background:rgba(88,101,242,.25);color:var(--text)}
+.topbar{display:flex;gap:10px;margin-bottom:14px}
+button{border:1px solid transparent;background:linear-gradient(90deg,#5865F2,#7c3aed);color:#fff;padding:9px 14px;border-radius:12px;font-weight:600}
+button.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+.card{background:linear-gradient(180deg,rgba(255,255,255,.02),transparent),var(--card);border:1px solid var(--border);border-radius:16px;box-shadow:0 60px 80px -60px #5865f2}
+.feed{padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.feed-head{display:flex;align-items:center;justify-content:space-between}
+.feed-name{font-weight:600}
+.chip{border:1px solid var(--border);padding:4px 8px;border-radius:999px;font-size:12px;color:var(--sub)}
+.row{display:flex;gap:10px;flex-wrap:wrap;color:var(--sub);font-size:13px}
+.preview{margin-top:4px;background:#0f1026;border:1px solid var(--border);border-radius:14px;padding:14px;display:flex;gap:12px}
+.avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#5865F2,#22d3ee)}
+.embed{flex:1;border-left:4px solid #5865F2;background:rgba(88,101,242,.12);border-radius:10px;padding:12px 14px}
+.embed-title{font-weight:600}
+.embed-desc{margin-top:6px;color:var(--sub);font-size:14px}
+.embed-footer{margin-top:10px;color:var(--sub);font-size:12px}
+footer{margin-top:40px;text-align:center;color:var(--sub);font-size:13px;padding-bottom:30px}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>🤖 RSS Bot — Админка</h1>
+    <p>Форум RSS → Discord · красивые embed-посты · v1.0.0</p>
+  </div>
+  <div style="display:flex;gap:10px;align-items:center">
+    <span class="badge">Онлайн</span>
+    <button class="ghost">Выйти</button>
+  </div>
+</header>
+<div class="wrap">
+  <div class="tabs">
+    <button class="tab active">📡 Ленты</button>
+    <button class="tab">⚙️ Настройки</button>
+    <button class="tab">📋 Логи</button>
+  </div>
+  <div class="topbar">
+    <button>＋ Добавить ленту</button>
+    <button class="ghost">↻ Обновить</button>
+  </div>
+  <div class="grid">
+    <div class="card feed">
+      <div class="feed-head">
+        <div class="feed-name">📰 Новости форума</div>
+        <div class="chip">🟢 Включена</div>
+      </div>
+      <div class="row">
+        <span>Канал: <b>#rss-news</b></span>
+        <span>Интервал: 5 мин</span>
+        <span>Embed: включён</span>
+      </div>
+      <div class="preview">
+        <div class="avatar"></div>
+        <div class="embed">
+          <div class="embed-title">Обновление правил форума</div>
+          <div class="embed-desc">Краткое описание свежей темы с превью содержимого...</div>
+          <div class="embed-footer">Новости форума · 12.11.2025</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="ghost" style="padding:7px 12px">Предпросмотр</button>
+        <button class="ghost" style="padding:7px 12px">Тест в Discord</button>
+        <button class="ghost" style="padding:7px 12px">Настроить</button>
+      </div>
+    </div>
+    <div class="card feed">
+      <div class="feed-head">
+        <div class="feed-name">🎮 Обновления игр</div>
+        <div class="chip">🟢 Включена</div>
+      </div>
+      <div class="row">
+        <span>Канал: <b>#game-updates</b></span>
+        <span>Интервал: 10 мин</span>
+        <span>Фильтры: включены</span>
+      </div>
+      <div class="preview">
+        <div class="avatar"></div>
+        <div class="embed" style="border-color:#22d3ee;background:rgba(34,211,238,.1)">
+          <div class="embed-title">Патч 1.12.4 — Список изменений</div>
+          <div class="embed-desc">Новые квесты, баланс, фиксы и многое другое...</div>
+          <div class="embed-footer">Обновления игр · 12.11.2025</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="ghost" style="padding:7px 12px">Предпросмотр</button>
+        <button class="ghost" style="padding:7px 12px">Тест в Discord</button>
+        <button class="ghost" style="padding:7px 12px">Настроить</button>
+      </div>
+    </div>
+  </div>
+</div>
+<footer>
+  <div>Made with ❤️ by <a href="https://github.com/Zver1o7" style="color:#a9b4ff">Zver1o7</a></div>
+  <div><a href="https://github.com/Zver1o7/Discord-RSS-Bot" style="color:var(--sub)">GitHub</a> · <a href="https://github.com/Zver1o7/Discord-RSS-Bot/issues" style="color:var(--sub)">Issues</a> · <a href="https://github.com/Zver1o7/Discord-RSS-Bot/releases" style="color:var(--sub)">Releases</a></div>
+</footer>
+</body>
+</html>

@@ -4,7 +4,7 @@
 
 ### Форум RSS → красивые посты в Discord + веб-админка в браузере
 
-> 🇬🇧 **English version:** [README.en.md](README.en.md) · 📣 Для раскрутки: [docs/PROMO.md](docs/PROMO.md)
+> 🇬🇧 **English version:** [README.en.md](README.en.md)
 
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![discord.py](https://img.shields.io/badge/discord.py-2.x-blurple?style=for-the-badge&logo=discord&logoColor=white)](https://discordpy.readthedocs.io/)

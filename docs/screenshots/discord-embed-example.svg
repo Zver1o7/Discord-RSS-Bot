@@ -1,0 +1,33 @@
+<svg width="1100" height="700" viewBox="0 0 1100 700" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1100" height="700" fill="#313338"/>
+  <g transform="translate(60,160)">
+    <circle cx="20" cy="20" r="20" fill="#5865F2"/>
+    <text x="20" y="26" fill="#fff" font-family="gg sans,Arial" font-size="14" font-weight="700" text-anchor="middle">R</text>
+    <text x="56" y="16" fill="#f2f3f5" font-family="gg sans,Arial" font-size="14" font-weight="500">RSS Bot</text>
+    <rect x="110" y="6" width="28" height="14" rx="3" fill="#5865F2"/>
+    <text x="124" y="16" fill="#fff" font-family="gg sans,Arial" font-size="9" text-anchor="middle">APP</text>
+    <text x="150" y="16" fill="#949ba4" font-family="gg sans,Arial" font-size="12">Сегодня в 12:34</text>
+    <text x="56" y="42" fill="#dbdee1" font-family="gg sans,Arial" font-size="14">@everyone</text>
+    <rect x="56" y="58" width="720" height="320" rx="4" fill="#2b2d31"/>
+    <rect x="56" y="58" width="4" height="320" rx="2" fill="#5865F2"/>
+    <circle cx="88" cy="90" r="12" fill="#5865F2"/>
+    <text x="110" y="95" fill="#dbdee1" font-family="gg sans,Arial" font-size="13">Новости форума</text>
+    <text x="88" y="128" fill="#00a8fc" font-family="gg sans,Arial" font-size="15" font-weight="600">Новый релиз: Discord RSS Bot v1.0.0</text>
+    <text x="88" y="156" fill="#dbdee1" font-family="gg sans,Arial" font-size="13">Forum RSS → красивые embed-посты в Discord с веб-админкой.</text>
+    <text x="88" y="178" fill="#dbdee1" font-family="gg sans,Arial" font-size="13">Фильтры, шаблоны, изображения, упоминания ролей.</text>
+    <text x="88" y="214" fill="#f2f3f5" font-family="gg sans,Arial" font-size="13" font-weight="600">Автор</text>
+    <text x="88" y="236" fill="#dbdee1" font-family="gg sans,Arial" font-size="13">Zver1o7</text>
+    <text x="420" y="214" fill="#f2f3f5" font-family="gg sans,Arial" font-size="13" font-weight="600">Дата</text>
+    <text x="420" y="236" fill="#dbdee1" font-family="gg sans,Arial" font-size="13">04.11.2025</text>
+    <rect x="88" y="256" width="580" height="80" rx="4" fill="url(#img)"/>
+    <defs>
+      <linearGradient id="img" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0%" stop-color="#5865F2"/>
+        <stop offset="100%" stop-color="#22d3ee"/>
+      </linearGradient>
+    </defs>
+    <text x="378" y="300" fill="#fff" font-family="gg sans,Arial" font-size="14" opacity=".8" text-anchor="middle">🖼 превью изображения из RSS</text>
+    <text x="88" y="366" fill="#949ba4" font-family="gg sans,Arial" font-size="11">Новости форума · GitHub: Zver1o7/Discord-RSS-Bot</text>
+    <rect x="684" y="70" width="80" height="80" rx="4" fill="url(#img)"/>
+  </g>
+</svg>
