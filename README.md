@@ -4,9 +4,12 @@
 
 ### Форум RSS → красивые посты в Discord + веб-админка в браузере
 
+> 🇬🇧 **English version:** [README.en.md](README.en.md) · 📣 Для раскрутки: [docs/PROMO.md](docs/PROMO.md)
+
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue?style=for-the-badge&logo=python&logoColor=white)](https://www.python.org/)
 [![discord.py](https://img.shields.io/badge/discord.py-2.x-blurple?style=for-the-badge&logo=discord&logoColor=white)](https://discordpy.readthedocs.io/)
 [![Flask](https://img.shields.io/badge/flask-admin-black?style=for-the-badge&logo=flask)](https://flask.palletsprojects.com/)
+[![Version](https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
 [![RSS](https://img.shields.io/badge/RSS-forum-orange?style=for-the-badge&logo=rss&logoColor=white)](#поддерживаемые-форумы)
 
@@ -180,9 +183,13 @@ discord-rss-bot/
 ├── config.example.json       # Пример конфига → скопируй в config.json
 ├── requirements.txt
 ├── start.bat                 # Запуск в 1 клик (Windows)
+├── CHANGELOG.md              # Что нового по версиям
+├── README.en.md              # English version
 ├── docs/
 │   ├── INSTALL.md            # Пошаговая установка с нуля
-│   └── FORUMS.md             # RSS-адреса для XenForo / phpBB / SMF / IPS…
+│   ├── FORUMS.md             # RSS-адреса для XenForo / phpBB / SMF / IPS…
+│   ├── PROMO.md              # 📣 Материалы для публикации и раскрутки
+│   └── banner.svg            # Баннер 1280×640 для Social preview
 ├── data/                     # Создаётся сам: seen.json, bot.log (в git не идёт)
 └── README.md
 ```

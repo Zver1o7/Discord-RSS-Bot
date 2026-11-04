@@ -1,6 +1,8 @@
 """Общая логика RSS-бота: конфиг, состояние, парсинг лент, фильтры, шаблоны."""
 from __future__ import annotations
 
+__version__ = "1.0.0"
+
 import hashlib
 import html
 import json

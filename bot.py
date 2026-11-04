@@ -190,7 +190,7 @@ class RSSBot(commands.Bot):
                 core.log_event("ERROR", f"first_run упал: {exc}", fid)
 
     async def on_ready(self) -> None:
-        log.info("RSS-бот запущен как %s (серверов: %d)", self.user, len(self.guilds))
+        log.info("Discord RSS Bot v%s — запущен как %s (серверов: %d)", core.__version__, self.user, len(self.guilds))
         core.log_event("INFO", f"Бот онлайн: {self.user} (серверов: {len(self.guilds)})")
         cfg = core.load_config()
         gid = str(cfg.get("guild_id") or "").strip()

@@ -60,6 +60,7 @@ def create_app() -> Flask:
             online, guilds = False, 0
         return jsonify({
             "ok": True,
+            "version": core.__version__,
             "bot_online": online,
             "guilds": guilds,
             "uptime": core.STARTED_AT.isoformat(),

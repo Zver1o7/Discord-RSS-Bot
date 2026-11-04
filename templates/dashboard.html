@@ -50,7 +50,7 @@ textarea{min-height:90px;resize:vertical;font-family:inherit}
 </head>
 <body>
 <header>
-<div><h1>🤖 RSS Bot — Админка</h1><p>Форум RSS → Discord · красивые embed-посты</p></div>
+<div><h1>🤖 RSS Bot — Админка</h1><p>Форум RSS → Discord · красивые embed-посты <span id="verTxt"></span></p></div>
 <div style="display:flex;gap:8px;align-items:center"><span class="badge" id="statusBadge">…</span><button class="ghost" onclick="logout()" style="background:rgba(255,255,255,.2)">Выйти</button></div>
 </header>
 
@@ -159,6 +159,7 @@ async function loadStatus(){
   const b = document.getElementById('statusBadge');
   if(!r.ok){ b.textContent='⛔ Нет доступа'; return; }
   b.textContent = (r.bot_online? '🟢 Бот онлайн':'🔴 Бот офлайн') + ` · лент: ${r.feeds_count}`;
+  const vt=document.getElementById('verTxt'); if(vt) vt.textContent='· v'+(r.version||'1.0.0');
 }
 async function loadFeeds(){
   const r = await api('/api/feeds');
