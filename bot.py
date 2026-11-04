@@ -93,6 +93,7 @@ async def post_item(bot: commands.Bot, feed: dict, item: dict, reason: str = "ne
             text = (f"{mention}\n" if mention else "") + content
             await channel.send(text[:2000] or item.get("link"))
         core.log_event("INFO", f"Опубликовано ({reason}): {item['title'][:80]}", str(feed.get("id")))
+        try { core.inc_stat("posts"); } catch(e) {}
         return True
     except Exception as exc:  # noqa: BLE001
         core.log_event("ERROR", f"Не удалось отправить: {exc}", str(feed.get("id")))
@@ -220,18 +221,33 @@ def build_bot() -> RSSBot:
 
     @bot.tree.command(name="about", description="О боте: автор, версия, ссылки")
     async def about_cmd(inter: discord.Interaction) -> None:
+        try:
+            stats = core.load_stats()
+            posts = int(stats.get("posts", 0) or 0)
+        except Exception:
+            posts = 0
+        try:
+            from datetime import datetime, timezone
+            up = (datetime.now(timezone.utc) - core.STARTED_AT).total_seconds()
+            h, rem = divmod(int(up), 3600)
+            m, s = divmod(rem, 60)
+            uptime = f"{h}ч {m}м {s}с"
+        except Exception:
+            uptime = "—"
         emb = discord.Embed(
             title="🤖 Discord RSS Bot",
             description=(
-                "Форум RSS → красивые embed-посты в Discord + веб-админка.\n\n"
+                "Форум/сайт RSS → красивые embed-посты в Discord + веб-админка.\n\n"
                 f"**Автор:** [{core.__author__}]({core.__author_url__})"
             ),
             color=0x5865F2,
             url=core.__github__,
         )
         emb.add_field(name="Версия", value=f"`v{core.__version__}`", inline=True)
+        emb.add_field(name="Uptime", value=uptime, inline=True)
+        emb.add_field(name="Опубликовано постов", value=f"`{posts}`", inline=True)
         emb.add_field(name="Репозиторий", value=f"[GitHub]({core.__github__})", inline=True)
-        emb.add_field(name="Проблемы/предложения", value=f"[Issues]({core.__github__}/issues)", inline=True)
+        emb.add_field(name="Issues", value=f"[Сообщить об ошибке]({core.__github__}/issues)", inline=True)
         emb.add_field(name="Релизы", value=f"[Releases]({core.__github__}/releases)", inline=True)
         emb.set_footer(text=f"by {core.__author__} • {core.__github__}")
         await inter.response.send_message(embed=emb, ephemeral=True)
@@ -328,6 +344,33 @@ def build_bot() -> RSSBot:
             await inter.followup.send(f"✅ Тестовый пост отправлен: **{item['title'][:80]}**", ephemeral=True)
         else:
             await inter.followup.send("❌ Не удалось отправить пост. Проверь логи в веб-админке.", ephemeral=True)
+
+    @bot.tree.command(name="rss-stats", description="Статистика бота")
+    async def rss_stats(inter: discord.Interaction) -> None:
+        cfg = core.load_config()
+        feeds = cfg.get("feeds", [])
+        active = sum(1 for f in feeds if f.get("enabled", True))
+        try:
+            stats = core.load_stats()
+            posts = int(stats.get("posts", 0) or 0)
+        except Exception:
+            posts = 0
+        try:
+            up = (datetime.now(timezone.utc) - core.STARTED_AT).total_seconds()
+            h, rem = divmod(int(up), 3600)
+            m, s = divmod(rem, 60)
+            uptime = f"{h}ч {m}м {s}с"
+        except Exception:
+            uptime = "—"
+        emb = discord.Embed(title="📊 Статистика RSS Bot", color=0x5865F2)
+        emb.add_field(name="Всего лент", value=f"`{len(feeds)}`", inline=True)
+        emb.add_field(name="Активных", value=f"`{active}`", inline=True)
+        emb.add_field(name="Опубликовано", value=f"`{posts}`", inline=True)
+        emb.add_field(name="Серверов", value=f"`{len(bot.guilds)}`", inline=True)
+        emb.add_field(name="Uptime", value=uptime, inline=True)
+        emb.add_field(name="Версия", value=f"`v{core.__version__}`", inline=True)
+        emb.set_footer(text=f"by {core.__author__}")
+        await inter.response.send_message(embed=emb, ephemeral=True)
 
     return bot
 

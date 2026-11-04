@@ -42,7 +42,8 @@
 
 | Command | Permission | Description |
 |---|---|---|
-| `/about` | Everyone | Bot info, version, author, links |
+| `/about` | Everyone | Bot info, version, stats, uptime |
+| `/rss-stats` | Everyone | Quick stats: feeds, posts, uptime |
 | `/rss-list` | Everyone | List all feeds with channels/status |
 | `/rss-info <feed_id>` | Everyone | Feed settings overview |
 | `/rss-check <feed_id>` | Manage Server | Force check a feed |

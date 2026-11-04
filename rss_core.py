@@ -6,6 +6,8 @@ __author__ = "Zver1o7"
 __github__ = "https://github.com/Zver1o7/Discord-RSS-Bot"
 __author_url__ = "https://github.com/Zver1o7"
 
+STATS_PATH = os.path.join(DATA_DIR, "stats.json")
+
 import hashlib
 import html
 import json
@@ -133,6 +135,32 @@ def log_event(level: str, msg: str, feed_id: str = "") -> None:
 def recent_logs(limit: int = 100) -> list[dict]:
     with _lock:
         return list(LOGS)[-limit:]
+
+
+def load_stats() -> dict:
+    ensure_dirs()
+    try:
+        with open(STATS_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {"posts": 0, "checks": 0}
+
+
+def inc_stat(key: str, amount: int = 1) -> None:
+    ensure_dirs()
+    stats = load_stats()
+    try:
+        stats[key] = int(stats.get(key, 0) or 0) + amount
+    except Exception:
+        stats[key] = amount
+    tmp = STATS_PATH + ".tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(stats, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, STATS_PATH)
+    except OSError:
+        pass
 
 
 # ---------- parsing helpers (no discord dependency) ----------
