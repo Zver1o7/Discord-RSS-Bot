@@ -47,7 +47,7 @@ pip3 --version
 ## 3. Настрой бота (2 минуты)
 
 ```bat
-cd discord-rss-bot
+cd Discord-RSS-Bot
 copy config.example.json config.json
 pip install -r requirements.txt
 ```

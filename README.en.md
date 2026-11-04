@@ -12,7 +12,7 @@
 
 **Universal bot:** takes any forum RSS feed and posts new topics to Discord as a beautiful embed — with image, author, date and a «Read on forum» button. Everything is configured from the browser, no code editing required.
 
-[🚀 Quick start](#-quick-start) • [📖 Full guide](docs/INSTALL.md) • [📰 RSS per forum](docs/FORUMS.md) • [⚙️ Feed settings](#️-feed-settings) • [❓ FAQ](#faq)
+[🚀 Quick start](#-quick-start) • [📖 Full guide](docs/INSTALL.md) • [📰 RSS per forum](docs/FORUMS.md) • [⚙️ Feed settings](#️-feed-settings) • [❓ FAQ](#-faq)
 
 > 🇷🇺 Русская версия: [README.md](README.md)
 
@@ -44,7 +44,7 @@
 **2. Configure:**
 
 ```bat
-cd discord-rss-bot
+cd Discord-RSS-Bot
 copy config.example.json config.json
 pip install -r requirements.txt
 ```
@@ -115,7 +115,7 @@ For instant command sync set `guild_id` in `config.json` and restart.
 ## 📁 Project structure
 
 ```
-discord-rss-bot/
+Discord-RSS-Bot/
 ├── bot.py                    # Discord bot + feed polling (tasks.loop)
 ├── webadmin.py               # Flask admin + REST API (/api/*)
 ├── rss_core.py               # Config, RSS parsing, filters, templates, seen/logs

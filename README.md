@@ -11,11 +11,11 @@
 [![Flask](https://img.shields.io/badge/flask-admin-black?style=for-the-badge&logo=flask)](https://flask.palletsprojects.com/)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue?style=for-the-badge)](CHANGELOG.md)
 [![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)](LICENSE)
-[![RSS](https://img.shields.io/badge/RSS-forum-orange?style=for-the-badge&logo=rss&logoColor=white)](#поддерживаемые-форумы)
+[![RSS](https://img.shields.io/badge/RSS-forum-orange?style=for-the-badge&logo=rss&logoColor=white)](#-поддерживаемые-форумы)
 
 **Универсальный бот:** берёт любую RSS-ленту форума и постит новые темы в Discord красивым embed'ом — с картинкой, автором, датой и кнопкой «Читать на форуме». Всё настраивается из браузера, код править не нужно.
 
-[🚀 Быстрый старт](#быстрый-старт-за-5-минут) • [📖 Инструкция](docs/INSTALL.md) • [📰 RSS для форумов](docs/FORUMS.md) • [⚙️ Настройки](#настройки-ленты) • [❓ FAQ](#faq)
+[🚀 Быстрый старт](#-быстрый-старт-за-5-минут) • [📖 Инструкция](docs/INSTALL.md) • [📰 RSS для форумов](docs/FORUMS.md) • [⚙️ Настройки](#️-настройки-ленты) • [❓ FAQ](#-faq)
 
 </div>
 
@@ -56,7 +56,7 @@
 **2. Скачай и настрой:**
 
 ```bat
-cd discord-rss-bot
+cd Discord-RSS-Bot
 copy config.example.json config.json
 pip install -r requirements.txt
 ```
@@ -174,7 +174,7 @@ python bot.py
 ## 📁 Структура проекта
 
 ```
-discord-rss-bot/
+Discord-RSS-Bot/
 ├── bot.py                    # Discord-бот + опрос лент (tasks.loop)
 ├── webadmin.py               # Flask-админка + REST API (/api/*)
 ├── rss_core.py               # Конфиг, парсинг RSS, фильтры, шаблоны, seen/логи

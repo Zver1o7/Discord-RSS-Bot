@@ -9,7 +9,7 @@
 | Где | Значение |
 |---|---|
 | Продукт (в интерфейсе) | **Discord RSS Bot** |
-| Репозиторий на GitHub | `discord-rss-bot` → `https://github.com/Zver1o7/discord-rss-bot` |
+| Репозиторий на GitHub | `Discord-RSS-Bot` → `https://github.com/Zver1o7/Discord-RSS-Bot` |
 | Короткое (для тегов/постов) | RSS → Discord бот |
 
 Альтернативы названия репо (если захочешь переименовать): `forum-rss-bot`, `rss-to-discord`, `discord-rss-feeds`.
@@ -66,7 +66,7 @@ feed-reader
 Код уже закоммичен, версия `1.0.0`. Пуш и релиз:
 
 ```bat
-git remote add origin https://github.com/Zver1o7/discord-rss-bot.git
+git remote add origin https://github.com/Zver1o7/Discord-RSS-Bot.git
 git push -u origin main
 ```
 
@@ -105,7 +105,7 @@ What makes it different:
 - Slash commands /rss-list and /rss-check
 - Plain Python: discord.py + feedparser + Flask, ~700 lines, no frontend build
 
-MIT licensed: https://github.com/Zver1o7/discord-rss-bot
+MIT licensed: https://github.com/Zver1o7/Discord-RSS-Bot
 
 Would love feedback — especially on which forum engines people use, so I can add more RSS URL recipes.
 ```
@@ -135,7 +135,7 @@ Body: short version + GitHub link + "runs on any VPS or Raspberry Pi, setup in 5
 
 Python: discord.py + feedparser + Flask. MIT.
 Настройка за 5 минут 👇
-https://github.com/Zver1o7/discord-rss-bot
+https://github.com/Zver1o7/Discord-RSS-Bot
 ```
 
 ### 🐦 X / Twitter (тред из 3 твитов)
@@ -153,7 +153,7 @@ No duplicate posts; first run never spams the backlog.
 
 3/3 MIT,5-minute setup, works with XenForo / phpBB / SMF / IPS / WordPress feeds.
 
-GitHub: https://github.com/Zver1o7/discord-rss-bot
+GitHub: https://github.com/Zver1o7/Discord-RSS-Bot
 
 RT appreciated 🙏
 ```
@@ -187,7 +187,7 @@ Self-hosted RSS → Discord bot, now open source (MIT)
 • Keyword filters, custom templates, /rss-list, /rss-check
 • Python: discord.py + feedparser + Flask
 
-https://github.com/Zver1o7/discord-rss-bot
+https://github.com/Zver1o7/Discord-RSS-Bot
 ```
 
 ### 📋 Сервисы-каталоги (заявки)
@@ -215,7 +215,7 @@ https://github.com/Zver1o7/discord-rss-bot
 
 ```bat
 cd D:\123\discord-rss-bot
-git remote add origin https://Zver1o7:ТОКЕН@github.com/Zver1o7/discord-rss-bot.git
+git remote add origin https://Zver1o7:ТОКЕН@github.com/Zver1o7/Discord-RSS-Bot.git
 git push -u origin main
 ```
 
