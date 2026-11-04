@@ -2,6 +2,9 @@
 from __future__ import annotations
 
 __version__ = "1.0.0"
+__author__ = "Zver1o7"
+__github__ = "https://github.com/Zver1o7/Discord-RSS-Bot"
+__author_url__ = "https://github.com/Zver1o7"
 
 import hashlib
 import html

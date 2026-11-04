@@ -15,6 +15,13 @@ import rss_core as core
 log = logging.getLogger("rssbot")
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(name)s: %(message)s", level=logging.INFO)
 
+BANNER = (
+    "╔══════════════════════════════════════════════════════════╗\n"
+    "║                DISCORD RSS BOT v{ver}                   ║\n"
+    "║                by {author} • {repo}                      ║\n"
+    "╚══════════════════════════════════════════════════════════╝"
+)
+
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 bot_instance: commands.Bot | None = None
 _last_check: dict[str, str] = {}
@@ -190,8 +197,10 @@ class RSSBot(commands.Bot):
                 core.log_event("ERROR", f"first_run упал: {exc}", fid)
 
     async def on_ready(self) -> None:
+        print(BANNER.format(ver=core.__version__, author=core.__author__, repo=core.__github__))
         log.info("Discord RSS Bot v%s — запущен как %s (серверов: %d)", core.__version__, self.user, len(self.guilds))
-        core.log_event("INFO", f"Бот онлайн: {self.user} (серверов: {len(self.guilds)})")
+        log.info("Автор: %s | %s", core.__author__, core.__github__)
+        core.log_event("INFO", f"Бот онлайн: {self.user} (серверов: {len(self.guilds)}) | by {core.__author__}")
         cfg = core.load_config()
         gid = str(cfg.get("guild_id") or "").strip()
         try:
@@ -208,6 +217,24 @@ def build_bot() -> RSSBot:
     bot = RSSBot()
     global bot_instance
     bot_instance = bot
+
+    @bot.tree.command(name="about", description="О боте: автор, версия, ссылки")
+    async def about_cmd(inter: discord.Interaction) -> None:
+        emb = discord.Embed(
+            title="🤖 Discord RSS Bot",
+            description=(
+                "Форум RSS → красивые embed-посты в Discord + веб-админка.\n\n"
+                f"**Автор:** [{core.__author__}]({core.__author_url__})"
+            ),
+            color=0x5865F2,
+            url=core.__github__,
+        )
+        emb.add_field(name="Версия", value=f"`v{core.__version__}`", inline=True)
+        emb.add_field(name="Репозиторий", value=f"[GitHub]({core.__github__})", inline=True)
+        emb.add_field(name="Проблемы/предложения", value=f"[Issues]({core.__github__}/issues)", inline=True)
+        emb.add_field(name="Релизы", value=f"[Releases]({core.__github__}/releases)", inline=True)
+        emb.set_footer(text=f"by {core.__author__} • {core.__github__}")
+        await inter.response.send_message(embed=emb, ephemeral=True)
 
     @bot.tree.command(name="rss-list", description="Показать все RSS-ленты")
     async def rss_list(inter: discord.Interaction) -> None:
