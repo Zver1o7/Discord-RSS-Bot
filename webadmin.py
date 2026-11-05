@@ -287,6 +287,18 @@ def create_app() -> Flask:
         core.log_event("INFO", f"Массовое действие: {action}")
         return jsonify({"ok": True, "feeds_count": len(cfg.get("feeds", []))})
 
+    @app.post("/api/feeds/<feed_id>/reset-seen")
+    @require_auth
+    def reset_seen(feed_id: str):
+        cfg = core.load_config()
+        if not core.get_feed(cfg, feed_id):
+            return jsonify({"ok": False, "error": "Лента не найдена"}), 404
+        seen = core.load_seen()
+        seen[str(feed_id)] = []
+        core.save_seen(seen)
+        core.log_event("INFO", "История ленты сброшена (API)", feed_id)
+        return jsonify({"ok": True})
+
     return app
 
 

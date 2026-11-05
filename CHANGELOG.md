@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 Format: [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), versioning: [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [1.3.0] — 2026-11-05
+
+### Added
+- Команды `/rss-ping`, `/rss-reload`, `/rss-reset`
+- Автодополнение ID лент в слэш-командах
+- Статус активности бота в Discord (Watching RSS)
+- API `/api/feeds/<id>/reset-seen`
+
 ## [1.2.0] — 2026-11-05
 
 ### Added

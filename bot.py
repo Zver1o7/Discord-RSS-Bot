@@ -235,6 +235,10 @@ class RSSBot(commands.Bot):
         log.info("Discord RSS Bot v%s — запущен как %s (серверов: %d)", core.__version__, self.user, len(self.guilds))
         log.info("Автор: %s | %s", core.__author__, core.__github__)
         core.log_event("INFO", f"Бот онлайн: {self.user} (серверов: {len(self.guilds)}) | by {core.__author__}")
+        try:
+            await self.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=f"RSS | v{core.__version__} | by {core.__author__}"))
+        except Exception:
+            pass
         cfg = core.load_config()
         gid = str(cfg.get("guild_id") or "").strip()
         try:
@@ -251,6 +255,20 @@ def build_bot() -> RSSBot:
     bot = RSSBot()
     global bot_instance
     bot_instance = bot
+
+    async def feed_id_autocomplete(inter: discord.Interaction, current: str) -> list[app_commands.Choice[str]]:
+        cfg = core.load_config()
+        cur = (current or "").lower()
+        choices = []
+        for f in cfg.get("feeds", [])[:25]:
+            fid = str(f.get("id", ""))
+            name = str(f.get("name", ""))
+            label = f"{name} ({fid})"[:100]
+            if cur in fid.lower() or cur in name.lower():
+                choices.append(app_commands.Choice(name=label, value=fid))
+            if len(choices) >= 25:
+                break
+        return choices
 
     @bot.tree.command(name="about", description="О боте: автор, версия, ссылки")
     async def about_cmd(inter: discord.Interaction) -> None:
@@ -300,6 +318,7 @@ def build_bot() -> RSSBot:
 
     @bot.tree.command(name="rss-check", description="Принудительно проверить ленту сейчас")
     @app_commands.describe(feed_id="ID ленты (смотри /rss-list)")
+    @app_commands.autocomplete(feed_id=feed_id_autocomplete)
     async def rss_check(inter: discord.Interaction, feed_id: str) -> None:
         if not inter.user.guild_permissions.manage_guild:
             await inter.response.send_message("⛔ Нужны права «Управление сервером».", ephemeral=True)
@@ -315,6 +334,7 @@ def build_bot() -> RSSBot:
 
     @bot.tree.command(name="rss-info", description="Информация о ленте")
     @app_commands.describe(feed_id="ID ленты (смотри /rss-list)")
+    @app_commands.autocomplete(feed_id=feed_id_autocomplete)
     async def rss_info(inter: discord.Interaction, feed_id: str) -> None:
         cfg = core.load_config()
         feed = core.get_feed(cfg, feed_id)
@@ -339,6 +359,7 @@ def build_bot() -> RSSBot:
 
     @bot.tree.command(name="rss-toggle", description="Включить/выключить ленту")
     @app_commands.describe(feed_id="ID ленты (смотри /rss-list)")
+    @app_commands.autocomplete(feed_id=feed_id_autocomplete)
     async def rss_toggle(inter: discord.Interaction, feed_id: str) -> None:
         if not inter.user.guild_permissions.manage_guild:
             await inter.response.send_message("⛔ Нужны права «Управление сервером».", ephemeral=True)
@@ -356,6 +377,7 @@ def build_bot() -> RSSBot:
 
     @bot.tree.command(name="rss-test", description="Тестовый пост свежей записи из ленты")
     @app_commands.describe(feed_id="ID ленты (смотри /rss-list)")
+    @app_commands.autocomplete(feed_id=feed_id_autocomplete)
     async def rss_test_cmd(inter: discord.Interaction, feed_id: str) -> None:
         if not inter.user.guild_permissions.manage_guild:
             await inter.response.send_message("⛔ Нужны права «Управление сервером».", ephemeral=True)
@@ -404,6 +426,39 @@ def build_bot() -> RSSBot:
         emb.add_field(name="Версия", value=f"`v{core.__version__}`", inline=True)
         emb.set_footer(text=f"by {core.__author__}")
         await inter.response.send_message(embed=emb, ephemeral=True)
+
+    @bot.tree.command(name="rss-ping", description="Проверить, что бот отвечает")
+    async def rss_ping(inter: discord.Interaction) -> None:
+        latency = round(bot.latency * 1000)
+        await inter.response.send_message(f"🏓 Pong! `{latency} ms` · v{core.__version__}", ephemeral=True)
+
+    @bot.tree.command(name="rss-reload", description="Перезагрузить конфиг без перезапуска")
+    async def rss_reload(inter: discord.Interaction) -> None:
+        if not inter.user.guild_permissions.manage_guild:
+            await inter.response.send_message("⛔ Нужны права «Управление сервером».", ephemeral=True)
+            return
+        cfg = core.load_config()
+        _next_run.clear()
+        await inter.response.send_message(f"✅ Конфиг перечитан. Лент: **{len(cfg.get('feeds',[]))}**. Таймеры сброшены.", ephemeral=True)
+        core.log_event("INFO", "Конфиг перезагружен через /rss-reload")
+
+    @bot.tree.command(name="rss-reset", description="Сбросить историю ленты (повторная публикация новых записей)")
+    @app_commands.describe(feed_id="ID ленты (смотри /rss-list)")
+    @app_commands.autocomplete(feed_id=feed_id_autocomplete)
+    async def rss_reset(inter: discord.Interaction, feed_id: str) -> None:
+        if not inter.user.guild_permissions.manage_guild:
+            await inter.response.send_message("⛔ Нужны права «Управление сервером».", ephemeral=True)
+            return
+        cfg = core.load_config()
+        feed = core.get_feed(cfg, feed_id)
+        if not feed:
+            await inter.response.send_message("❌ Лента не найдена.", ephemeral=True)
+            return
+        seen = core.load_seen()
+        seen[str(feed_id)] = []
+        core.save_seen(seen)
+        await inter.response.send_message(f"✅ История ленты **{feed.get('name')}** сброшена. Следующая проверка обработает записи как новые (с учётом первого запуска).", ephemeral=True)
+        core.log_event("INFO", "История ленты сброшена", feed_id)
 
     return bot
 

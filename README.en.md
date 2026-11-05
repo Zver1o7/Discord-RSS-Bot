@@ -8,7 +8,7 @@
 [![discord.py](https://img.shields.io/badge/discord.py-2.x-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discordpy.readthedocs.io/)
 [![Flask](https://img.shields.io/badge/Flask-3.x-000000?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.2.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.3.0-blue?style=flat-square)](CHANGELOG.md)
 
 > Any forum/site RSS → clean embed posts in Discord. Web admin panel, filters, templates, slash commands.
 
@@ -48,12 +48,15 @@
 | Command | Permission | Description |
 |---|---|---|
 | `/about` | Everyone | Bot info, version, stats, uptime |
+| `/rss-ping` | Everyone | Check bot latency |
 | `/rss-stats` | Everyone | Quick stats: feeds, posts, uptime |
 | `/rss-list` | Everyone | List all feeds with channels/status |
-| `/rss-info <feed_id>` | Everyone | Feed settings overview |
+| `/rss-info <feed_id>` | Everyone | Feed settings overview (autocomplete) |
 | `/rss-check <feed_id>` | Manage Server | Force check a feed |
 | `/rss-toggle <feed_id>` | Manage Server | Enable/disable a feed |
 | `/rss-test <feed_id>` | Manage Server | Post a fresh item for testing |
+| `/rss-reset <feed_id>` | Manage Server | Reset feed history |
+| `/rss-reload` | Manage Server | Reload config without restart |
 
 ## Quick start
 
