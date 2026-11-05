@@ -58,14 +58,20 @@ def create_app() -> Flask:
             guilds = len(b.guilds) if b and online else 0
         except Exception:
             online, guilds = False, 0
+        try:
+            stats = core.load_stats()
+        except Exception:
+            stats = {}
         return jsonify({
             "ok": True,
             "version": core.__version__,
+            "author": core.__author__,
             "bot_online": online,
             "guilds": guilds,
             "uptime": core.STARTED_AT.isoformat(),
             "feeds_count": len(cfg.get("feeds", [])),
             "default_interval": cfg.get("default_interval", 300),
+            "posts": int(stats.get("posts", 0) or 0),
         })
 
     @app.get("/api/feeds")
@@ -130,6 +136,25 @@ def create_app() -> Flask:
         core.save_config(cfg)
         core.log_event("INFO", "Лента удалена", feed_id)
         return jsonify({"ok": True})
+
+    @app.post("/api/feeds/<feed_id>/duplicate")
+    @require_auth
+    def feeds_duplicate(feed_id: str):
+        cfg = core.load_config()
+        feed = core.get_feed(cfg, feed_id)
+        if not feed:
+            return jsonify({"ok": False, "error": "Лента не найдена"}), 404
+        import copy
+        nf = copy.deepcopy(feed)
+        nf["name"] = (nf.get("name") or "Копия") + " (копия)"
+        nf["id"] = core.new_feed_id(nf.get("rss_url", "") + "|" + nf.get("channel_id", "") + "|dup")
+        base = nf["id"]; i = 1
+        while core.get_feed(cfg, nf["id"]):
+            i += 1; nf["id"] = f"{base}_{i}"
+        cfg["feeds"].append(nf)
+        core.save_config(cfg)
+        core.log_event("INFO", f"Лента продублирована: {nf['name']}", nf["id"])
+        return jsonify({"ok": True, "feed": nf})
 
     @app.get("/api/config")
     @require_auth
@@ -201,6 +226,46 @@ def create_app() -> Flask:
         if ok:
             return jsonify({"ok": True, "posted": item["title"]})
         return jsonify({"ok": False, "error": "Не удалось отправить (смотри логи)"}), 500
+
+    @app.get("/api/export")
+    @require_auth
+    def export_config():
+        cfg = core.load_config()
+        safe = {k: v for k, v in cfg.items() if k != "discord_token"}
+        return jsonify({"ok": True, "config": safe})
+
+    @app.post("/api/import")
+    @require_auth
+    def import_config():
+        body = request.get_json(silent=True) or {}
+        incoming = body.get("config") if isinstance(body.get("config"), dict) else body
+        if not isinstance(incoming, dict):
+            return jsonify({"ok": False, "error": "Некорректный формат"}), 400
+        cfg = core.load_config()
+        # импортируем только безопасные части: feeds и базовые настройки
+        if "feeds" in incoming and isinstance(incoming["feeds"], list):
+            mode = str(body.get("mode") or "merge")
+            new_feeds = [f for f in incoming["feeds"] if isinstance(f, dict)]
+            if mode == "replace":
+                cfg["feeds"] = new_feeds
+            else:
+                existing_ids = {str(f.get("id")) for f in cfg.get("feeds", [])}
+                for f in new_feeds:
+                    fid = str(f.get("id") or "")
+                    if not fid or fid in existing_ids:
+                        base = core.new_feed_id(str(f.get("rss_url","")) + "|imp")
+                        i = 1
+                        f["id"] = base
+                        while f["id"] in existing_ids:
+                            i += 1; f["id"] = f"{base}_{i}"
+                    cfg["feeds"].append(f)
+                    existing_ids.add(f["id"])
+        for k in ("default_interval", "max_summary_length"):
+            if k in incoming:
+                cfg[k] = incoming[k]
+        core.save_config(cfg)
+        core.log_event("INFO", f"Импорт конфигурации: лент {len(cfg.get('feeds',[]))}")
+        return jsonify({"ok": True, "feeds_count": len(cfg.get("feeds", []))})
 
     return app
 

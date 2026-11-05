@@ -1,0 +1,12 @@
+services:
+  rss-bot:
+    build: .
+    container_name: discord-rss-bot
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config.json:/app/config.json
+      - ./data:/app/data
+    environment:
+      - TZ=Europe/Moscow

@@ -1,7 +1,7 @@
 """Общая логика RSS-бота: конфиг, состояние, парсинг лент, фильтры, шаблоны."""
 from __future__ import annotations
 
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __author__ = "Zver1o7"
 __github__ = "https://github.com/Zver1o7/Discord-RSS-Bot"
 __author_url__ = "https://github.com/Zver1o7"
@@ -336,8 +336,11 @@ def default_feed(url: str, channel_id: str, name: str = "") -> dict:
         "use_embed": True,
         "show_image": True,
         "show_author": True,
+        "show_timestamp": True,
         "mention": "",
         "include_keywords": "",
         "exclude_keywords": "",
         "max_posts": 3,
+        "webhook_url": "",
+        "thread_id": "",
     }

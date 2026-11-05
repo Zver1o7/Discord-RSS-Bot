@@ -37,12 +37,13 @@ def hex_to_int(value: str, default: int = 0x5865F2) -> int:
 
 
 def build_embed(feed: dict, item: dict) -> discord.Embed:
+    ts = datetime.now(timezone.utc) if feed.get("show_timestamp", True) else None
     emb = discord.Embed(
         title=item["title"][:256],
         url=item["link"] or None,
         description=item["summary"][:4096] or None,
         color=hex_to_int(feed.get("color", "#5865F2")),
-        timestamp=datetime.now(timezone.utc),
+        timestamp=ts,
     )
     if feed.get("show_author", True) and item.get("author"):
         emb.set_author(name=item["author"][:256])
@@ -64,36 +65,63 @@ def build_view(item: dict) -> discord.ui.View | None:
 
 
 async def post_item(bot: commands.Bot, feed: dict, item: dict, reason: str = "new") -> bool:
+    webhook_url = str(feed.get("webhook_url", "") or "").strip()
+    thread_id = str(feed.get("thread_id", "") or "").strip()
     channel_id = str(feed.get("channel_id", "")).strip()
-    if not channel_id.isdigit():
-        core.log_event("ERROR", f"Некорректный channel_id: {channel_id}", str(feed.get("id")))
+
+    mention = str(feed.get("mention", "") or "").strip()
+    content = core.render_template(feed.get("template", ""), item)
+    use_embed = feed.get("use_embed", True)
+
+    # подготовка контента
+    embed = build_embed(feed, item) if use_embed else None
+    view = build_view(item)
+    if use_embed:
+        prefix = f"{mention}\n" if mention else ""
+        text = prefix + (content if len(content) < 1500 else (mention or ""))
+        if len(content) >= 1500:
+            text = prefix.strip() or None
+        send_kwargs = {"content": text or None, "embed": embed, "view": view}
+    else:
+        send_kwargs = {"content": ((f"{mention}\n" if mention else "") + content)[:2000] or item.get("link")}
+
+    # 1) Вебхук
+    if webhook_url.startswith(("http://", "https://")):
+        try:
+            wh = discord.Webhook.from_url(webhook_url, client=bot)
+            kwargs = dict(send_kwargs)
+            if thread_id.isdigit():
+                kwargs["thread"] = discord.Object(id=int(thread_id))
+            await wh.send(wait=True, **kwargs)
+            core.log_event("INFO", f"Опубликовано webhook ({reason}): {item['title'][:80]}", str(feed.get("id")))
+            try:
+                core.inc_stat("posts")
+            except Exception:
+                pass
+            return True
+        except Exception as exc:  # noqa: BLE001
+            core.log_event("ERROR", f"Webhook ошибка: {exc}", str(feed.get("id")))
+            return False
+
+    # 2) Обычный канал/ветка
+    target_id = thread_id if thread_id.isdigit() else channel_id
+    if not target_id.isdigit():
+        core.log_event("ERROR", f"Некорректный channel_id/thread_id: {channel_id}/{thread_id}", str(feed.get("id")))
         return False
-    channel = bot.get_channel(int(channel_id))
+    channel = bot.get_channel(int(target_id))
     if channel is None:
         try:
-            channel = await bot.fetch_channel(int(channel_id))
+            channel = await bot.fetch_channel(int(target_id))
         except Exception as exc:  # noqa: BLE001
-            core.log_event("ERROR", f"Канал {channel_id} недоступен: {exc}", str(feed.get("id")))
+            core.log_event("ERROR", f"Канал {target_id} недоступен: {exc}", str(feed.get("id")))
             return False
     try:
-        mention = str(feed.get("mention", "") or "").strip()
-        content = core.render_template(feed.get("template", ""), item)
-        # embed-режим: короткий текст + embed
-        if feed.get("use_embed", True):
-            embed = build_embed(feed, item)
-            view = build_view(item)
-            prefix = f"{mention}\n" if mention else ""
-            # если шаблон кастомный и короткий — шлём его как content, иначе только mention
-            text = prefix + (content if len(content) < 1500 else (mention or ""))
-            # чтобы не дублировать ссылку дважды: если embed есть, content можно ужать
-            if len(content) >= 1500:
-                text = prefix.strip() or None
-            await channel.send(content=text or None, embed=embed, view=view)  # type: ignore[arg-type]
-        else:
-            text = (f"{mention}\n" if mention else "") + content
-            await channel.send(text[:2000] or item.get("link"))
+        await channel.send(**send_kwargs)  # type: ignore[arg-type]
         core.log_event("INFO", f"Опубликовано ({reason}): {item['title'][:80]}", str(feed.get("id")))
-        try { core.inc_stat("posts"); } catch(e) {}
+        try:
+            core.inc_stat("posts")
+        except Exception:
+            pass
         return True
     except Exception as exc:  # noqa: BLE001
         core.log_event("ERROR", f"Не удалось отправить: {exc}", str(feed.get("id")))

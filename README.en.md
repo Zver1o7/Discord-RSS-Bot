@@ -8,7 +8,7 @@
 [![discord.py](https://img.shields.io/badge/discord.py-2.x-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discordpy.readthedocs.io/)
 [![Flask](https://img.shields.io/badge/Flask-3.x-000000?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.1.0-blue?style=flat-square)](CHANGELOG.md)
 
 > Any forum/site RSS → clean embed posts in Discord. Web admin panel, filters, templates, slash commands.
 
@@ -29,13 +29,18 @@
 - **Any RSS/Atom** — works with most feeds via `feedparser`
 - **Clean embeds** — color accent, image, author, date, footer, "Read more" button
 - **Web admin** — dark panel at `http://127.0.0.1:8000`. Add/edit/preview/test without touching JSON
+- **Webhooks & threads** — post via webhook URL or into a specific thread ID
 - **Custom templates** — use `{title}`, `{link}`, `{author}`, `{summary}`, `{date}`, `{feed_name}`, `{tags}`
 - **Keyword filters** — include/exclude rules
 - **Per-feed intervals** — different check times per feed
+- **Import/export** — backup and migrate feeds via JSON
+- **Feed duplication** — clone settings quickly
 - **Smart first run** — skips history on first launch
 - **Live testing** — test posts from web or Discord
+- **Stats** — post counter, uptime, `/about`, `/rss-stats`
 - **Logs in panel** — see activity at a glance
 - **Password protected** — optional auth for web UI
+- **Docker** — ready `Dockerfile` and `docker-compose.yml`
 - **Visible credits** — console banner, `/about`, web footer
 
 ## Slash commands
@@ -72,6 +77,17 @@ python bot.py
 Open [http://127.0.0.1:8000](http://127.0.0.1:8000) to add your first RSS feed.
 
 See [docs/INSTALL.md](docs/INSTALL.md) and [docs/FORUMS.md](docs/FORUMS.md) for details.
+
+## Docker
+
+```bash
+git clone https://github.com/Zver1o7/Discord-RSS-Bot.git
+cd Discord-RSS-Bot
+copy config.example.json config.json
+docker compose up -d --build
+```
+
+Admin panel: `http://127.0.0.1:8000`. `config.json` and `data/` are mounted as volumes.
 
 ## Author
 

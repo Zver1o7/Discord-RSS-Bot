@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file.
 
 Format: [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), versioning: [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [1.1.0] — 2026-11-05
+
+### Added
+- Slash-команды `/rss-info`, `/rss-toggle`, `/rss-test`, `/rss-stats`
+- Статистика публикаций и аптайм (`/about`, `/rss-stats`, `data/stats.json`)
+- Публикация через webhook и в thread по ID
+- Импорт/экспорт конфигурации лент и дублирование лент в API
+- Docker: `Dockerfile`, `docker-compose.yml`, `.dockerignore`
+- Баннер и скриншоты в README
+
+### Changed
+- Переработаны README (RU/EN), видимое авторство Zver1o7
+
 ## [1.0.0] — 2026-11-04
 
 Первый публичный релиз.

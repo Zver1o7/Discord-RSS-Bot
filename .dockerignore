@@ -1,0 +1,11 @@
+.git
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+venv/
+data/*.log
+*.tmp
+docs/screenshots/mockup_*.html
