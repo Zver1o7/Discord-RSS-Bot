@@ -96,6 +96,7 @@ async def post_item(bot: commands.Bot, feed: dict, item: dict, reason: str = "ne
             core.log_event("INFO", f"Опубликовано webhook ({reason}): {item['title'][:80]}", str(feed.get("id")))
             try:
                 core.inc_stat("posts")
+                core.set_feed_meta(str(feed.get("id","")), last_post=datetime.now(timezone.utc).isoformat(timespec="seconds"))
             except Exception:
                 pass
             return True
@@ -139,6 +140,10 @@ async def check_feed(bot: commands.Bot, feed: dict, *, first_run: bool = False, 
         core.fetch_feed_items, feed.get("rss_url", ""), feed.get("name", ""), max_len, 15
     )
     _last_check[fid] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    try:
+        core.set_feed_meta(fid, last_check=_last_check[fid])
+    except Exception:
+        pass
     if err and not items:
         core.log_event("ERROR", f"RSS ошибка: {err}", fid)
         return 0

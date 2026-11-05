@@ -38,6 +38,11 @@ def create_app() -> Flask:
     def index():
         return send_from_directory(TEMPLATES_DIR, "dashboard.html")
 
+    @app.get("/health")
+    def health():
+        cfg = core.load_config()
+        return jsonify({"ok": True, "version": core.__version__, "feeds": len(cfg.get("feeds", []))})
+
     @app.post("/api/login")
     def login():
         cfg = core.load_config()
@@ -265,6 +270,21 @@ def create_app() -> Flask:
                 cfg[k] = incoming[k]
         core.save_config(cfg)
         core.log_event("INFO", f"Импорт конфигурации: лент {len(cfg.get('feeds',[]))}")
+        return jsonify({"ok": True, "feeds_count": len(cfg.get("feeds", []))})
+
+    @app.post("/api/feeds/bulk")
+    @require_auth
+    def feeds_bulk():
+        body = request.get_json(silent=True) or {}
+        action = str(body.get("action", ""))
+        if action not in ("enable_all", "disable_all"):
+            return jsonify({"ok": False, "error": "Неизвестное действие"}), 400
+        cfg = core.load_config()
+        val = action == "enable_all"
+        for f in cfg.get("feeds", []):
+            f["enabled"] = val
+        core.save_config(cfg)
+        core.log_event("INFO", f"Массовое действие: {action}")
         return jsonify({"ok": True, "feeds_count": len(cfg.get("feeds", []))})
 
     return app

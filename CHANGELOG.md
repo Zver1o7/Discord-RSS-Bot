@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 
 Format: [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), versioning: [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [1.2.0] — 2026-11-05
+
+### Added
+- Эндпоинт `/health` для мониторинга
+- Трекинг `last_check` / `last_post` по каждой ленте
+- Массовые операции API: включить/выключить все ленты (`/api/feeds/bulk`)
+- Улучшения API статуса (статистика постов)
+
 ## [1.1.0] — 2026-11-05
 
 ### Added

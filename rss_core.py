@@ -1,7 +1,7 @@
 """Общая логика RSS-бота: конфиг, состояние, парсинг лент, фильтры, шаблоны."""
 from __future__ import annotations
 
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 __author__ = "Zver1o7"
 __github__ = "https://github.com/Zver1o7/Discord-RSS-Bot"
 __author_url__ = "https://github.com/Zver1o7"
@@ -144,16 +144,11 @@ def load_stats() -> dict:
             data = json.load(f)
             return data if isinstance(data, dict) else {}
     except (OSError, json.JSONDecodeError):
-        return {"posts": 0, "checks": 0}
+        return {"posts": 0, "checks": 0, "feeds": {}}
 
 
-def inc_stat(key: str, amount: int = 1) -> None:
+def save_stats(stats: dict) -> None:
     ensure_dirs()
-    stats = load_stats()
-    try:
-        stats[key] = int(stats.get(key, 0) or 0) + amount
-    except Exception:
-        stats[key] = amount
     tmp = STATS_PATH + ".tmp"
     try:
         with open(tmp, "w", encoding="utf-8") as f:
@@ -161,6 +156,28 @@ def inc_stat(key: str, amount: int = 1) -> None:
         os.replace(tmp, STATS_PATH)
     except OSError:
         pass
+
+
+def inc_stat(key: str, amount: int = 1) -> None:
+    stats = load_stats()
+    try:
+        stats[key] = int(stats.get(key, 0) or 0) + amount
+    except Exception:
+        stats[key] = amount
+    save_stats(stats)
+
+
+def set_feed_meta(feed_id: str, **fields) -> None:
+    stats = load_stats()
+    feeds = stats.setdefault("feeds", {})
+    meta = feeds.setdefault(str(feed_id), {})
+    meta.update(fields)
+    save_stats(stats)
+
+
+def get_feed_meta(feed_id: str) -> dict:
+    stats = load_stats()
+    return (stats.get("feeds") or {}).get(str(feed_id), {})
 
 
 # ---------- parsing helpers (no discord dependency) ----------
