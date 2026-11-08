@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 Format: [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), versioning: [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [1.4.0] — 2026-11-08
+
+### Added
+- 🌙 Тихие часы: настройка `quiet_hours` в конфиге и UI, записи копятся и публикуются после тишины
+- 🔁 Автоповтор отправки при ошибке Discord/вебхука
+- 👁 Команда `/rss-preview` — предпросмотр записи без публикации
+- 🔎 Поиск по логам в веб-панели (`/api/logs?q=`)
+- 🧵 Поля webhook/thread/метка времени в форме ленты (UI + API)
+- ⬇⬆ Кнопки импорта/экспорта конфига и массового включения/выключения в UI
+- ⧉ Дублирование ленты кнопкой в панели
+
+### Changed
+- Обновлены README (RU/EN), config.example.json
+
 ## [1.3.0] — 2026-11-05
 
 ### Added

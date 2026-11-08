@@ -73,7 +73,12 @@ textarea{min-height:90px;resize:vertical;font-family:inherit}
 </div>
 
 <div id="tab-feeds">
-<div class="topbar"><button onclick="openModal()">＋ Добавить ленту</button><button class="ghost" onclick="loadAll()">↻ Обновить</button></div>
+<div class="topbar"><button onclick="openModal()">＋ Добавить ленту</button><button class="ghost" onclick="loadAll()">↻ Обновить</button>
+<button class="ghost" onclick="exportCfg()">⬇ Экспорт</button>
+<button class="ghost" onclick="document.getElementById('impFile').click()">⬆ Импорт</button>
+<input type="file" id="impFile" accept="application/json" style="display:none" onchange="importCfg(this.files[0])">
+<button class="ghost" onclick="bulk('enable_all')">▶ Все вкл</button>
+<button class="ghost" onclick="bulk('disable_all')">⏸ Все выкл</button></div>
 <div id="feeds" class="grid"></div>
 </div>
 
@@ -89,6 +94,15 @@ textarea{min-height:90px;resize:vertical;font-family:inherit}
 <div><label>Пароль админки<input id="s_webpwd" placeholder="admin123"></label></div>
 </div>
 <label>Новый Discord-токен (пусто = не менять)<input id="s_token" placeholder="••••••"></label>
+<div class="card" style="margin-top:14px">
+<h3 style="margin-top:0">🌙 Тихие часы</h3>
+<div class="two">
+<div><label>Начало (час, 0–23)<input id="s_qstart" type="number" min="0" max="23" value="23"></label></div>
+<div><label>Конец (час, 0–23)<input id="s_qend" type="number" min="0" max="23" value="8"></label></div>
+</div>
+<div class="check"><input type="checkbox" id="s_qenabled"> Не публиковать в эти часы (записи копятся и уйдут утром)</div>
+<p class="hint">Интервал может пересекать полночь (например 23 → 8). <span id="s_qnow"></span></p>
+</div>
 <button class="ok" onclick="saveSettings()" style="margin-top:14px">💾 Сохранить</button>
 <p class="hint">Переменные шаблона: {title} {link} {author} {summary} {date} {feed_name} {tags}<br>
 Чтобы узнать ID канала: Discord → Настройки → Расширенные → Режим разработчика → ПКМ по каналу → Копировать ID.<br>
@@ -97,7 +111,9 @@ textarea{min-height:90px;resize:vertical;font-family:inherit}
 </div>
 
 <div id="tab-logs" class="hidden">
-<div class="card"><h3>📋 Последние события <button class="ghost" onclick="loadLogs()" style="float:right">↻</button></h3><div id="logs" class="log">…</div></div>
+<div class="card"><h3>📋 Последние события <button class="ghost" onclick="loadLogs()" style="float:right">↻</button></h3>
+<input id="logQ" placeholder="Поиск по логам…" onkeydown="if(event.key==='Enter')loadLogs()" style="width:100%;margin-bottom:10px">
+<div id="logs" class="log">…</div></div>
 </div>
 </div>
 </div>
@@ -125,10 +141,15 @@ textarea{min-height:90px;resize:vertical;font-family:inherit}
 </div>
 <label>Включая ключевые слова (через запятую, пусто = все)<input id="f_inc" placeholder="релиз, обновление"></label>
 <label>Исключая слова<input id="f_exc" placeholder="флуд, оффтоп"></label>
+<div class="two">
+<div><label>Webhook URL (пусто = обычный канал)<input id="f_webhook" placeholder="https://discord.com/api/webhooks/..."></label></div>
+<div><label>ID ветки/треда (пусто = канал)<input id="f_thread" placeholder="123456789012345678"></label></div>
+</div>
 <div class="check"><input type="checkbox" id="f_enabled" checked> Включена</div>
 <div class="check"><input type="checkbox" id="f_embed" checked> Красивый embed</div>
 <div class="check"><input type="checkbox" id="f_img" checked> Показывать картинку</div>
 <div class="check"><input type="checkbox" id="f_author" checked> Показывать автора</div>
+<div class="check"><input type="checkbox" id="f_ts" checked> Метка времени</div>
 <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap">
 <button class="ok" onclick="saveFeed()">💾 Сохранить</button>
 <button class="ghost" onclick="closeModal()">Отмена</button>
@@ -171,12 +192,13 @@ async function loadFeeds(){
       <span class="dot" style="background:${f.enabled?'#3ba55c':'#555'}"></span>
       <small>${f.id} · каждые ${f.interval_sec||'общ.'}с · макс ${f.max_posts}</small>
       <h4>${esc(f.name)}</h4>
-      <small>📰 ${esc(f.rss_url)}<br>💬 канал ${esc(f.channel_id)} ${f.mention?('· '+esc(f.mention)):''}</small>
+      <small>📰 ${esc(f.rss_url)}<br>💬 канал ${esc(f.channel_id)} ${f.mention?('· '+esc(f.mention)):''}${f.webhook_url?'<br>🔗 webhook':''}${f.thread_id?'<br>🧵 ветка':''}</small>
       <div class="row">
         <button onclick="editFeed('${f.id}')">✏️</button>
         <button class="ghost" onclick="previewFeed('${f.id}')">👁</button>
         <button class="ok" onclick="testFeed('${f.id}')">📤 Тест</button>
         <button class="ghost" onclick="toggleFeed('${f.id}', ${!f.enabled})">${f.enabled?'⏸':'▶️'}</button>
+        <button class="ghost" onclick="dupFeed('${f.id}')">⧉</button>
         <button class="danger" onclick="delFeed('${f.id}')">🗑</button>
       </div>
       <div id="pv-${f.id}"></div>
@@ -184,7 +206,8 @@ async function loadFeeds(){
   window._feeds = Object.fromEntries(r.feeds.map(f=>[f.id,f]));
 }
 function esc(s){ return String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function openModal(){ document.getElementById('m_title').textContent='Новая лента'; ['f_id','f_name','f_url','f_channel','f_mention','f_inc','f_exc'].forEach(id=>document.getElementById(id).value='');
+function openModal(){ document.getElementById('m_title').textContent='Новая лента'; ['f_id','f_name','f_url','f_channel','f_mention','f_inc','f_exc','f_webhook','f_thread'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f_ts').checked=true;
   document.getElementById('preview').innerHTML=''; document.getElementById('modal').classList.add('open'); }
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 function editFeed(id){ const f = window._feeds[id]; if(!f) return;
@@ -195,20 +218,47 @@ function editFeed(id){ const f = window._feeds[id]; if(!f) return;
   document.getElementById('f_template').value=f.template||''; document.getElementById('f_mention').value=f.mention||'';
   document.getElementById('f_max').value=f.max_posts||3; document.getElementById('f_inc').value=f.include_keywords||'';
   document.getElementById('f_exc').value=f.exclude_keywords||'';
+  document.getElementById('f_webhook').value=f.webhook_url||''; document.getElementById('f_thread').value=f.thread_id||'';
   document.getElementById('f_enabled').checked=!!f.enabled; document.getElementById('f_embed').checked=!!f.use_embed;
   document.getElementById('f_img').checked=!!f.show_image; document.getElementById('f_author').checked=!!f.show_author;
+  document.getElementById('f_ts').checked=f.show_timestamp!==false;
   document.getElementById('preview').innerHTML=''; document.getElementById('modal').classList.add('open'); }
 async function saveFeed(){
   const id = document.getElementById('f_id').value;
   const body = {name:val('f_name'), rss_url:val('f_url'), channel_id:val('f_channel'),
     color:val('f_color'), interval_sec:+val('f_interval')||0, template:document.getElementById('f_template').value,
     mention:val('f_mention'), max_posts:+val('f_max')||3, include_keywords:val('f_inc'), exclude_keywords:val('f_exc'),
+    webhook_url:val('f_webhook'), thread_id:val('f_thread'),
     enabled:document.getElementById('f_enabled').checked, use_embed:document.getElementById('f_embed').checked,
-    show_image:document.getElementById('f_img').checked, show_author:document.getElementById('f_author').checked};
+    show_image:document.getElementById('f_img').checked, show_author:document.getElementById('f_author').checked,
+    show_timestamp:document.getElementById('f_ts').checked};
   const r = id? await api('/api/feeds/'+id,'PUT',body) : await api('/api/feeds','POST',body);
   if(!r.ok){ alert('Ошибка: '+r.error); return; }
   closeModal(); loadFeeds();
 }
+async function exportCfg(){
+  const r = await api('/api/export'); if(!r.ok){ alert('❌ '+r.error); return; }
+  const blob = new Blob([JSON.stringify(r.config,null,2)],{type:'application/json'});
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'rss-bot-config.json'; a.click(); URL.revokeObjectURL(a.href);
+}
+async function importCfg(file){
+  if(!file) return;
+  const txt = await file.text();
+  let data; try{ data = JSON.parse(txt); }catch(e){ alert('Некорректный JSON'); return; }
+  if(!confirm('Импортировать ленты из файла?')) return;
+  const mode = confirm('Заменить все текущие ленты? OK = заменить, Отмена = добавить к существующим') ? 'replace' : 'merge';
+  const r = await api('/api/import','POST',{config:data, mode});
+  alert(r.ok? '✅ Импортировано: лент '+r.feeds_count : '❌ '+r.error);
+  if(r.ok) loadFeeds();
+}
+async function bulk(action){
+  const label = action==='enable_all'? 'включить ВСЕ ленты':'выключить ВСЕ ленты';
+  if(!confirm(label.charAt(0).toUpperCase()+label.slice(1)+'?')) return;
+  const r = await api('/api/feeds/bulk','POST',{action});
+  if(r.ok) loadFeeds(); else alert('❌ '+r.error);
+}
+async function dupFeed(id){ const r = await api('/api/feeds/'+id+'/duplicate','POST'); if(r.ok) loadFeeds(); else alert('❌ '+r.error); }
 function val(id){ return document.getElementById(id).value.trim(); }
 async function toggleFeed(id, en){ const r = await api('/api/feeds/'+id,'PUT',{enabled:en}); if(r.ok) loadFeeds(); }
 async function delFeed(id){ if(!confirm('Удалить ленту '+id+'?')) return; const r = await api('/api/feeds/'+id,'DELETE'); if(r.ok) loadFeeds(); }
@@ -231,16 +281,28 @@ async function loadSettings(){ const r = await api('/api/config'); if(!r.ok) ret
   document.getElementById('s_maxlen').value=r.config.max_summary_length||300;
   document.getElementById('s_guild').value=r.config.guild_id||'';
   document.getElementById('s_port').value=r.config.web?.port||8000;
-  document.getElementById('s_webpwd').value=''; }
+  document.getElementById('s_webpwd').value='';
+  const qh=r.config.quiet_hours||{};
+  document.getElementById('s_qenabled').checked=!!qh.enabled;
+  document.getElementById('s_qstart').value=qh.start??23;
+  document.getElementById('s_qend').value=qh.end??8;
+  const qn=document.getElementById('s_qnow');
+  if(qn) qn.textContent = r.config.quiet_now? '→ Сейчас тихие часы: публикация отложена.' : '';
+}
 async function saveSettings(){ const body={default_interval:+document.getElementById('s_interval').value||300,
   max_summary_length:+document.getElementById('s_maxlen').value||300, guild_id:document.getElementById('s_guild').value.trim()||null,
-  web:{port:+document.getElementById('s_port').value||8000}};
+  web:{port:+document.getElementById('s_port').value||8000},
+  quiet_hours:{enabled:document.getElementById('s_qenabled').checked,
+    start:+document.getElementById('s_qstart').value||0, end:+document.getElementById('s_qend').value||0}};
   const wp=document.getElementById('s_webpwd').value.trim(); if(wp) body.web.password=wp;
   const tk=document.getElementById('s_token').value.trim(); if(tk) body.discord_token=tk;
   const r = await api('/api/config','PUT',body); alert(r.ok?'✅ Сохранено. Порт/токен применятся после перезапуска.':'❌ '+r.error); }
-async function loadLogs(){ const r = await api('/api/logs'); const box=document.getElementById('logs');
+async function loadLogs(){ const box=document.getElementById('logs');
+  const q = (document.getElementById('logQ')?.value||'').trim();
+  const r = await api('/api/logs'+(q?('?q='+encodeURIComponent(q)):''));
   if(!r.ok){ box.textContent='Ошибка доступа'; return; }
-  box.innerHTML = r.logs.slice().reverse().map(l=>`<span class="${l.level}">[${l.time}] [${l.level}] ${esc(l.feed)} ${esc(l.msg)}</span>`).join('\n') || 'Пока пусто'; }
+  box.innerHTML = r.logs.slice().reverse().map(l=>`<span class="${l.level}">[${l.time}] [${l.level}] ${esc(l.feed)} ${esc(l.msg)}</span>`).join('\n')
+    || (q? 'Ничего не найдено по запросу «'+esc(q)+'»' : 'Пока пусто'); }
 </script>
 <footer style="text-align:center;padding:24px 16px 16px;color:var(--sub);font-size:13px;line-height:1.8">
   <div>Made with ❤️ by <a href="https://github.com/Zver1o7" target="_blank" rel="noopener">Zver1o7</a></div>

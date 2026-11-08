@@ -8,7 +8,7 @@
 [![discord.py](https://img.shields.io/badge/discord.py-2.x-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discordpy.readthedocs.io/)
 [![Flask](https://img.shields.io/badge/Flask-3.x-000000?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.3.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue?style=flat-square)](CHANGELOG.md)
 
 > Any forum/site RSS → clean embed posts in Discord. Web admin panel, filters, templates, slash commands.
 
@@ -38,6 +38,10 @@
 - **Smart first run** — skips history on first launch
 - **Live testing** — test posts from web or Discord
 - **Stats** — post counter, uptime, `/about`, `/rss-stats`
+- **Quiet hours** — pause posting at night, posts queue until morning
+- **Auto-retry** — resend on Discord/webhook failure
+- **Log search** — filter logs right in the panel
+- **Import/export in UI** — toolbar buttons, bulk enable/disable
 - **Logs in panel** — see activity at a glance
 - **Password protected** — optional auth for web UI
 - **Docker** — ready `Dockerfile` and `docker-compose.yml`
@@ -55,6 +59,7 @@
 | `/rss-check <feed_id>` | Manage Server | Force check a feed |
 | `/rss-toggle <feed_id>` | Manage Server | Enable/disable a feed |
 | `/rss-test <feed_id>` | Manage Server | Post a fresh item for testing |
+| `/rss-preview <feed_id>` | Everyone | Preview an item without posting |
 | `/rss-reset <feed_id>` | Manage Server | Reset feed history |
 | `/rss-reload` | Manage Server | Reload config without restart |
 

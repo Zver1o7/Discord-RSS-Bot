@@ -8,7 +8,7 @@
 [![discord.py](https://img.shields.io/badge/discord.py-2.x-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discordpy.readthedocs.io/)
 [![Flask](https://img.shields.io/badge/Flask-3.x-000000?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.3.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.4.0-blue?style=flat-square)](CHANGELOG.md)
 
 > Форум/сайт RSS → красивые посты в Discord. Веб-админка в браузере, фильтры, шаблоны, слэш-команды.
 
@@ -42,6 +42,10 @@
 - **Умная синхронизация** — при первом запуске история не публикуется
 - **Тест из админки и из Discord** — быстрая проверка перед боевым включением
 - **Статистика** — счётчик публикаций, аптайм, команды `/about` и `/rss-stats`
+- **Тихие часы** — не публиковать ночью, записи копятся и уходят утром
+- **Повтор отправки** — при сбое Discord/вебхука автоматический ретрай
+- **Поиск по логам** — фильтр прямо в панели
+- **Импорт/экспорт в UI** — кнопки в панели, массовое включение/выключение
 - **Логи в админке** — сразу видно, что происходит
 - **Защита паролем** — опционально для веб-панели
 - **Docker** — готовый `Dockerfile` и `docker-compose.yml`
@@ -59,6 +63,7 @@
 | `/rss-check <feed_id>` | Управление сервером | Принудительно проверить ленту |
 | `/rss-toggle <feed_id>` | Управление сервером | Включить/выключить ленту |
 | `/rss-test <feed_id>` | Управление сервером | Опубликовать свежую запись для теста |
+| `/rss-preview <feed_id>` | Любые | Предпросмотр записи без публикации |
 | `/rss-reset <feed_id>` | Управление сервером | Сбросить историю ленты |
 | `/rss-reload` | Управление сервером | Перечитать конфиг без перезапуска |
 

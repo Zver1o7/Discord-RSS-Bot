@@ -85,24 +85,34 @@ async def post_item(bot: commands.Bot, feed: dict, item: dict, reason: str = "ne
     else:
         send_kwargs = {"content": ((f"{mention}\n" if mention else "") + content)[:2000] or item.get("link")}
 
-    # 1) Вебхук
-    if webhook_url.startswith(("http://", "https://")):
+    async def _mark_ok() -> None:
         try:
-            wh = discord.Webhook.from_url(webhook_url, client=bot)
-            kwargs = dict(send_kwargs)
-            if thread_id.isdigit():
-                kwargs["thread"] = discord.Object(id=int(thread_id))
-            await wh.send(wait=True, **kwargs)
-            core.log_event("INFO", f"Опубликовано webhook ({reason}): {item['title'][:80]}", str(feed.get("id")))
+            core.inc_stat("posts")
+            core.set_feed_meta(str(feed.get("id", "")),
+                               last_post=datetime.now(timezone.utc).isoformat(timespec="seconds"))
+        except Exception:
+            pass
+
+    # 1) Вебхук (с повтором при сбое)
+    if webhook_url.startswith(("http://", "https://")):
+        last_exc: Exception | None = None
+        for attempt in (1, 2):
             try:
-                core.inc_stat("posts")
-                core.set_feed_meta(str(feed.get("id","")), last_post=datetime.now(timezone.utc).isoformat(timespec="seconds"))
-            except Exception:
-                pass
-            return True
-        except Exception as exc:  # noqa: BLE001
-            core.log_event("ERROR", f"Webhook ошибка: {exc}", str(feed.get("id")))
-            return False
+                wh = discord.Webhook.from_url(webhook_url, client=bot)
+                kwargs = dict(send_kwargs)
+                if thread_id.isdigit():
+                    kwargs["thread"] = discord.Object(id=int(thread_id))
+                await wh.send(wait=True, **kwargs)
+                core.log_event("INFO", f"Опубликовано webhook ({reason}): {item['title'][:80]}", str(feed.get("id")))
+                await _mark_ok()
+                return True
+            except Exception as exc:  # noqa: BLE001
+                last_exc = exc
+                if attempt == 1:
+                    core.log_event("WARN", f"Webhook ошибка (повтор): {exc}", str(feed.get("id")))
+                    await asyncio.sleep(3)
+        core.log_event("ERROR", f"Webhook ошибка после повтора: {last_exc}", str(feed.get("id")))
+        return False
 
     # 2) Обычный канал/ветка
     target_id = thread_id if thread_id.isdigit() else channel_id
@@ -116,17 +126,21 @@ async def post_item(bot: commands.Bot, feed: dict, item: dict, reason: str = "ne
         except Exception as exc:  # noqa: BLE001
             core.log_event("ERROR", f"Канал {target_id} недоступен: {exc}", str(feed.get("id")))
             return False
-    try:
-        await channel.send(**send_kwargs)  # type: ignore[arg-type]
-        core.log_event("INFO", f"Опубликовано ({reason}): {item['title'][:80]}", str(feed.get("id")))
+
+    last_exc = None
+    for attempt in (1, 2):
         try:
-            core.inc_stat("posts")
-        except Exception:
-            pass
-        return True
-    except Exception as exc:  # noqa: BLE001
-        core.log_event("ERROR", f"Не удалось отправить: {exc}", str(feed.get("id")))
-        return False
+            await channel.send(**send_kwargs)  # type: ignore[arg-type]
+            core.log_event("INFO", f"Опубликовано ({reason}): {item['title'][:80]}", str(feed.get("id")))
+            await _mark_ok()
+            return True
+        except Exception as exc:  # noqa: BLE001
+            last_exc = exc
+            if attempt == 1:
+                core.log_event("WARN", f"Ошибка отправки (повтор): {exc}", str(feed.get("id")))
+                await asyncio.sleep(3)
+    core.log_event("ERROR", f"Не удалось отправить после повтора: {last_exc}", str(feed.get("id")))
+    return False
 
 
 async def check_feed(bot: commands.Bot, feed: dict, *, first_run: bool = False, force_post: bool = False) -> int:
@@ -135,6 +149,11 @@ async def check_feed(bot: commands.Bot, feed: dict, *, first_run: bool = False, 
     if not feed.get("enabled", True):
         return 0
     cfg = core.load_config()
+    # тихие часы: не публикуем и НЕ помечаем записи как просмотренные,
+    # чтобы после тишины они всё ещё были «новыми»
+    if not force_post and core.is_quiet_now(cfg):
+        core.log_event("INFO", "Тихие часы — публикация отложена", fid)
+        return 0
     max_len = int(cfg.get("max_summary_length", 300) or 300)
     items, err = await asyncio.to_thread(
         core.fetch_feed_items, feed.get("rss_url", ""), feed.get("name", ""), max_len, 15
@@ -459,6 +478,32 @@ def build_bot() -> RSSBot:
         core.save_seen(seen)
         await inter.response.send_message(f"✅ История ленты **{feed.get('name')}** сброшена. Следующая проверка обработает записи как новые (с учётом первого запуска).", ephemeral=True)
         core.log_event("INFO", "История ленты сброшена", feed_id)
+
+    @bot.tree.command(name="rss-preview", description="Предпросмотр последней записи ленты (без публикации)")
+    @app_commands.describe(feed_id="ID ленты (смотри /rss-list)")
+    @app_commands.autocomplete(feed_id=feed_id_autocomplete)
+    async def rss_preview(inter: discord.Interaction, feed_id: str) -> None:
+        cfg = core.load_config()
+        feed = core.get_feed(cfg, feed_id)
+        if not feed:
+            await inter.response.send_message("❌ Лента не найдена.", ephemeral=True)
+            return
+        await inter.response.defer(ephemeral=True)
+        max_len = int(cfg.get("max_summary_length", 300) or 300)
+        items, err = await asyncio.to_thread(
+            core.fetch_feed_items, feed.get("rss_url", ""), feed.get("name", ""), max_len, 1
+        )
+        if not items:
+            await inter.followup.send(f"❌ Лента пустая или недоступна. {err or ''}", ephemeral=True)
+            return
+        item = items[0]
+        emb = build_embed(feed, item)
+        await inter.followup.send(
+            content=f"👁 **Предпросмотр** (не опубликовано){' · ' + err if err else ''}",
+            embed=emb,
+            view=build_view(item),
+            ephemeral=True,
+        )
 
     return bot
 

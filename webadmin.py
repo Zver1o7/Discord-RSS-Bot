@@ -98,8 +98,8 @@ def create_app() -> Flask:
         cfg = core.load_config()
         feed = core.default_feed(url, channel, str(body.get("name", "") or "").strip())
         for k in ("enabled", "interval_sec", "color", "template", "use_embed",
-                  "show_image", "show_author", "mention", "include_keywords",
-                  "exclude_keywords", "max_posts"):
+                  "show_image", "show_author", "show_timestamp", "mention", "include_keywords",
+                  "exclude_keywords", "max_posts", "webhook_url", "thread_id"):
             if k in body:
                 feed[k] = body[k]
         # id уникален
@@ -122,8 +122,9 @@ def create_app() -> Flask:
         if not feed:
             return jsonify({"ok": False, "error": "Лента не найдена"}), 404
         for k in ("name", "rss_url", "channel_id", "enabled", "interval_sec", "color",
-                  "template", "use_embed", "show_image", "show_author", "mention",
-                  "include_keywords", "exclude_keywords", "max_posts"):
+                  "template", "use_embed", "show_image", "show_author", "show_timestamp",
+                  "mention", "include_keywords", "exclude_keywords", "max_posts",
+                  "webhook_url", "thread_id"):
             if k in body:
                 feed[k] = body[k]
         core.save_config(cfg)
@@ -167,6 +168,7 @@ def create_app() -> Flask:
         cfg = core.load_config()
         safe = {k: v for k, v in cfg.items() if k != "discord_token"}
         safe["has_token"] = bool(cfg.get("discord_token"))
+        safe["quiet_now"] = core.is_quiet_now(cfg)
         return jsonify({"ok": True, "config": safe})
 
     @app.put("/api/config")
@@ -179,6 +181,21 @@ def create_app() -> Flask:
                 cfg[k] = body[k]
         if isinstance(body.get("web"), dict):
             cfg.setdefault("web", {}).update(body["web"])
+        if isinstance(body.get("quiet_hours"), dict):
+            qh = cfg.setdefault("quiet_hours", {"enabled": False, "start": 23, "end": 8})
+            q = body["quiet_hours"]
+            if "enabled" in q:
+                qh["enabled"] = bool(q["enabled"])
+            if "start" in q:
+                try:
+                    qh["start"] = max(0, min(23, int(q["start"])))
+                except (TypeError, ValueError):
+                    pass
+            if "end" in q:
+                try:
+                    qh["end"] = max(0, min(23, int(q["end"])))
+                except (TypeError, ValueError):
+                    pass
         if body.get("discord_token"):
             cfg["discord_token"] = body["discord_token"]
         core.save_config(cfg)
@@ -187,7 +204,8 @@ def create_app() -> Flask:
     @app.get("/api/logs")
     @require_auth
     def logs():
-        return jsonify({"ok": True, "logs": core.recent_logs(150)})
+        q = str(request.args.get("q", "") or "")
+        return jsonify({"ok": True, "logs": core.recent_logs(150, q), "query": q})
 
     @app.post("/api/feeds/<feed_id>/preview")
     @require_auth

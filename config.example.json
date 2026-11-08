@@ -3,6 +3,11 @@
   "guild_id": null,
   "default_interval": 300,
   "max_summary_length": 300,
+  "quiet_hours": {
+    "enabled": false,
+    "start": 23,
+    "end": 8
+  },
   "web": {
     "enabled": true,
     "port": 8000,

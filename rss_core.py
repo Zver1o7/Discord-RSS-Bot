@@ -1,7 +1,7 @@
 """Общая логика RSS-бота: конфиг, состояние, парсинг лент, фильтры, шаблоны."""
 from __future__ import annotations
 
-__version__ = "1.3.0"
+__version__ = "1.4.0"
 __author__ = "Zver1o7"
 __github__ = "https://github.com/Zver1o7/Discord-RSS-Bot"
 __author_url__ = "https://github.com/Zver1o7"
@@ -33,6 +33,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "guild_id": None,
     "default_interval": 300,
     "max_summary_length": 300,
+    "quiet_hours": {"enabled": False, "start": 23, "end": 8},
     "web": {"enabled": True, "port": 8000, "password": "admin123"},
     "feeds": [],
 }
@@ -77,6 +78,25 @@ def get_feed(cfg: dict, feed_id: str) -> dict | None:
         if str(feed.get("id")) == str(feed_id):
             return feed
     return None
+
+
+def is_quiet_now(cfg: dict | None = None) -> bool:
+    """True, если сейчас тихие часы (настройка quiet_hours)."""
+    try:
+        cfg = cfg or load_config()
+        qh = cfg.get("quiet_hours") or {}
+        if not qh.get("enabled"):
+            return False
+        start = int(qh.get("start", 23) or 23)
+        end = int(qh.get("end", 8) or 8)
+        hour = datetime.now().hour
+        if start == end:
+            return False
+        if start > end:  # интервал через полночь
+            return hour >= start or hour < end
+        return start <= hour < end
+    except Exception:
+        return False
 
 
 def new_feed_id(url: str) -> str:
@@ -132,9 +152,16 @@ def log_event(level: str, msg: str, feed_id: str = "") -> None:
         pass
 
 
-def recent_logs(limit: int = 100) -> list[dict]:
+def recent_logs(limit: int = 100, query: str = "") -> list[dict]:
     with _lock:
-        return list(LOGS)[-limit:]
+        items = list(LOGS)
+    if query:
+        q = query.lower().strip()
+        items = [r for r in items
+                 if q in str(r.get("msg", "")).lower()
+                 or q in str(r.get("feed", "")).lower()
+                 or q in str(r.get("level", "")).lower()]
+    return items[-limit:]
 
 
 def load_stats() -> dict:
