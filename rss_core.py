@@ -1,12 +1,10 @@
 """Общая логика RSS-бота: конфиг, состояние, парсинг лент, фильтры, шаблоны."""
 from __future__ import annotations
 
-__version__ = "1.4.0"
+__version__ = "1.5.0"
 __author__ = "Zver1o7"
 __github__ = "https://github.com/Zver1o7/Discord-RSS-Bot"
 __author_url__ = "https://github.com/Zver1o7"
-
-STATS_PATH = os.path.join(DATA_DIR, "stats.json")
 
 import hashlib
 import html
@@ -15,7 +13,7 @@ import os
 import re
 import threading
 from collections import deque
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -23,6 +21,9 @@ CONFIG_PATH = os.path.join(BASE_DIR, "config.json")
 DATA_DIR = os.path.join(BASE_DIR, "data")
 SEEN_PATH = os.path.join(DATA_DIR, "seen.json")
 LOG_PATH = os.path.join(DATA_DIR, "bot.log")
+STATS_PATH = os.path.join(DATA_DIR, "stats.json")
+HISTORY_PATH = os.path.join(DATA_DIR, "history.json")
+DIGEST_PATH = os.path.join(DATA_DIR, "digest.json")
 
 _lock = threading.Lock()
 LOGS: deque[dict] = deque(maxlen=300)
@@ -34,6 +35,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "default_interval": 300,
     "max_summary_length": 300,
     "quiet_hours": {"enabled": False, "start": 23, "end": 8},
+    "alerts": {"channel_id": "", "after_failures": 3},
     "web": {"enabled": True, "port": 8000, "password": "admin123"},
     "feeds": [],
 }
@@ -60,6 +62,8 @@ def load_config() -> dict[str, Any]:
     cfg.update(data if isinstance(data, dict) else {})
     if "web" not in cfg or not isinstance(cfg["web"], dict):
         cfg["web"] = dict(DEFAULT_CONFIG["web"])
+    if "alerts" not in cfg or not isinstance(cfg["alerts"], dict):
+        cfg["alerts"] = dict(DEFAULT_CONFIG["alerts"])
     if "feeds" not in cfg or not isinstance(cfg["feeds"], list):
         cfg["feeds"] = []
     return cfg
@@ -207,6 +211,109 @@ def get_feed_meta(feed_id: str) -> dict:
     return (stats.get("feeds") or {}).get(str(feed_id), {})
 
 
+# ---------- history (posts per day) ----------
+
+def record_post_day(amount: int = 1) -> None:
+    """Увеличивает счётчик публикаций за сегодня. Хранит 30 дней."""
+    ensure_dirs()
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    try:
+        with open(HISTORY_PATH, "r", encoding="utf-8") as f:
+            hist = json.load(f)
+        if not isinstance(hist, dict):
+            hist = {}
+    except (OSError, json.JSONDecodeError):
+        hist = {}
+    hist[today] = int(hist.get(today, 0) or 0) + amount
+    for key in sorted(hist.keys())[:-30]:
+        hist.pop(key, None)
+    try:
+        tmp = HISTORY_PATH + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(hist, f, ensure_ascii=False)
+        os.replace(tmp, HISTORY_PATH)
+    except OSError:
+        pass
+
+
+def get_history(days: int = 7) -> list[dict]:
+    """Список {date, posts} за последние N дней (сегодня последний)."""
+    ensure_dirs()
+    try:
+        with open(HISTORY_PATH, "r", encoding="utf-8") as f:
+            hist = json.load(f)
+        if not isinstance(hist, dict):
+            hist = {}
+    except (OSError, json.JSONDecodeError):
+        hist = {}
+    out = []
+    for i in range(days - 1, -1, -1):
+        day = (datetime.now(timezone.utc) - timedelta(days=i)).strftime("%Y-%m-%d")
+        out.append({"date": day, "posts": int(hist.get(day, 0) or 0)})
+    return out
+
+
+# ---------- digest queue ----------
+
+def load_digest() -> dict:
+    ensure_dirs()
+    try:
+        with open(DIGEST_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            return data if isinstance(data, dict) else {}
+    except (OSError, json.JSONDecodeError):
+        return {}
+
+
+def save_digest(data: dict) -> None:
+    ensure_dirs()
+    tmp = DIGEST_PATH + ".tmp"
+    try:
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(data, f, ensure_ascii=False, indent=2)
+        os.replace(tmp, DIGEST_PATH)
+    except OSError:
+        pass
+
+
+def queue_digest(feed_id: str, items: list[dict], max_keep: int = 30) -> int:
+    """Копит записи в очередь дайджеста. Возвращает размер очереди."""
+    data = load_digest()
+    entry = data.get(str(feed_id)) or {"items": [], "queued_at": None}
+    have = {str(i.get("uid")) for i in entry.get("items", [])}
+    for it in items:
+        uid = str(it.get("uid") or it.get("link") or it.get("title"))
+        if uid in have:
+            continue
+        entry["items"].append({
+            "uid": uid,
+            "title": it.get("title", ""),
+            "link": it.get("link", ""),
+            "image": it.get("image", ""),
+            "summary": it.get("summary", ""),
+            "author": it.get("author", ""),
+            "date": it.get("date", ""),
+        })
+        have.add(uid)
+    entry["items"] = entry["items"][-max_keep:]
+    if not entry.get("queued_at"):
+        entry["queued_at"] = datetime.now(timezone.utc).isoformat(timespec="seconds")
+    data[str(feed_id)] = entry
+    save_digest(data)
+    return len(entry["items"])
+
+
+def get_digest(feed_id: str) -> dict:
+    return load_digest().get(str(feed_id)) or {"items": [], "queued_at": None}
+
+
+def clear_digest(feed_id: str) -> None:
+    data = load_digest()
+    if str(feed_id) in data:
+        data.pop(str(feed_id), None)
+        save_digest(data)
+
+
 # ---------- parsing helpers (no discord dependency) ----------
 
 TAG_RE = re.compile(r"<[^>]+>")
@@ -339,7 +446,8 @@ def fetch_feed_items(rss_url: str, feed_name: str = "", max_len: int = 300, limi
     return items, ""
 
 
-def match_filters(item: dict, include: str, exclude: str) -> bool:
+def match_filters(item: dict, include: str, exclude: str,
+                  include_regex: str = "", exclude_regex: str = "") -> bool:
     """True — запись проходит фильтры. Ключевики через запятую, поиск по title+summary."""
     text = f"{item.get('title','')} {item.get('summary','')}".lower()
     inc = [w.strip().lower() for w in (include or "").split(",") if w.strip()]
@@ -348,6 +456,17 @@ def match_filters(item: dict, include: str, exclude: str) -> bool:
         return False
     if inc and not any(w in text for w in inc):
         return False
+    for pattern, mode in ((include_regex, "inc"), (exclude_regex, "exc")):
+        if not pattern:
+            continue
+        try:
+            hit = re.search(pattern, text, re.IGNORECASE)
+        except re.error:
+            continue  # некорректная регулярка — просто игнорируем
+        if mode == "inc" and not hit:
+            return False
+        if mode == "exc" and hit:
+            return False
     return True
 
 
@@ -387,4 +506,9 @@ def default_feed(url: str, channel_id: str, name: str = "") -> dict:
         "max_posts": 3,
         "webhook_url": "",
         "thread_id": "",
+        "post_mode": "instant",
+        "digest_interval": 3600,
+        "digest_max": 5,
+        "include_regex": "",
+        "exclude_regex": "",
     }

@@ -8,7 +8,7 @@
 [![discord.py](https://img.shields.io/badge/discord.py-2.x-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discordpy.readthedocs.io/)
 [![Flask](https://img.shields.io/badge/Flask-3.x-000000?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.4.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue?style=flat-square)](CHANGELOG.md)
 
 > Any forum/site RSS → clean embed posts in Discord. Web admin panel, filters, templates, slash commands.
 
@@ -38,6 +38,10 @@
 - **Smart first run** — skips history on first launch
 - **Live testing** — test posts from web or Discord
 - **Stats** — post counter, uptime, `/about`, `/rss-stats`
+- **Digest mode** — batch new posts into one scheduled summary
+- **Failure alerts** — get notified when a feed keeps failing
+- **Regex filters** — precise include/exclude rules
+- **Publish chart** — 7 days of stats right in the panel
 - **Quiet hours** — pause posting at night, posts queue until morning
 - **Auto-retry** — resend on Discord/webhook failure
 - **Log search** — filter logs right in the panel

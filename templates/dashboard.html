@@ -73,6 +73,10 @@ textarea{min-height:90px;resize:vertical;font-family:inherit}
 </div>
 
 <div id="tab-feeds">
+<div class="card" style="margin-bottom:14px">
+<h3 style="margin-top:0">📊 Публикации за 7 дней</h3>
+<div id="chart" style="display:flex;gap:8px;height:110px"></div>
+</div>
 <div class="topbar"><button onclick="openModal()">＋ Добавить ленту</button><button class="ghost" onclick="loadAll()">↻ Обновить</button>
 <button class="ghost" onclick="exportCfg()">⬇ Экспорт</button>
 <button class="ghost" onclick="document.getElementById('impFile').click()">⬆ Импорт</button>
@@ -102,6 +106,12 @@ textarea{min-height:90px;resize:vertical;font-family:inherit}
 </div>
 <div class="check"><input type="checkbox" id="s_qenabled"> Не публиковать в эти часы (записи копятся и уйдут утром)</div>
 <p class="hint">Интервал может пересекать полночь (например 23 → 8). <span id="s_qnow"></span></p>
+</div>
+<div class="card" style="margin-top:14px">
+<h3 style="margin-top:0">🚨 Алерты о сломанных лентах</h3>
+<label>ID канала для алертов (пусто = выкл)<input id="s_alch" placeholder="123456789012345678"></label>
+<label>Падать подряд раз до алерта<input id="s_aln" type="number" min="1" max="20" value="3"></label>
+<p class="hint">Если лента недоступна N проверок подряд, бот пришлёт предупреждение в этот канал.</p>
 </div>
 <button class="ok" onclick="saveSettings()" style="margin-top:14px">💾 Сохранить</button>
 <p class="hint">Переменные шаблона: {title} {link} {author} {summary} {date} {feed_name} {tags}<br>
@@ -145,6 +155,19 @@ textarea{min-height:90px;resize:vertical;font-family:inherit}
 <div><label>Webhook URL (пусто = обычный канал)<input id="f_webhook" placeholder="https://discord.com/api/webhooks/..."></label></div>
 <div><label>ID ветки/треда (пусто = канал)<input id="f_thread" placeholder="123456789012345678"></label></div>
 </div>
+<label>Режим публикации
+<select id="f_mode">
+<option value="instant">⚡ Сразу — каждая запись отдельным постом</option>
+<option value="digest">🍮 Дайджест — копить и слать сводкой</option>
+</select></label>
+<div class="two">
+<div><label>Regex-включая (необязательно)<input id="f_incre" placeholder="^(новости|релизы)"></label></div>
+<div><label>Regex-исключая (необязательно)<input id="f_excre" placeholder="спам.*"></label></div>
+</div>
+<div class="two">
+<div><label>Интервал дайджеста, сек (для режима 🍮)<input id="f_digint" type="number" min="60" value="3600"></label></div>
+<div><label>Слать раньше при N записей (для 🍮)<input id="f_digmax" type="number" min="1" max="50" value="5"></label></div>
+</div>
 <div class="check"><input type="checkbox" id="f_enabled" checked> Включена</div>
 <div class="check"><input type="checkbox" id="f_embed" checked> Красивый embed</div>
 <div class="check"><input type="checkbox" id="f_img" checked> Показывать картинку</div>
@@ -174,7 +197,20 @@ function showMain(){ document.getElementById('login').style.display='none'; docu
 function tab(name, el){ document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active')); el.classList.add('active');
   ['feeds','settings','logs'].forEach(n=>document.getElementById('tab-'+n).classList.toggle('hidden', n!==name));
   if(name==='logs') loadLogs(); if(name==='settings') loadSettings(); }
-async function loadAll(){ await Promise.all([loadFeeds(), loadStatus()]); }
+async function loadAll(){ await Promise.all([loadFeeds(), loadStatus(), loadHistory()]); }
+async function loadHistory(){
+  const box = document.getElementById('chart'); if(!box) return;
+  const r = await api('/api/stats/history?days=7'); if(!r.ok) return;
+  const max = Math.max(1, ...r.history.map(h=>h.posts));
+  box.innerHTML = r.history.map(h=>{
+    const px = Math.max(4, Math.round(h.posts / max * 80));
+    return `<div style="flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:3px;min-width:0" title="${h.date}: ${h.posts} постов">
+      <span style="font-size:11px">${h.posts}</span>
+      <div style="width:100%;max-width:44px;height:${px}px;background:linear-gradient(180deg,#5865f2,#3b45c4);border-radius:6px 6px 0 0"></div>
+      <span style="font-size:11px;color:#8a8f9c">${h.date.slice(5)}</span>
+    </div>`;
+  }).join('');
+}
 async function loadStatus(){
   const r = await api('/api/status');
   const b = document.getElementById('statusBadge');
@@ -187,12 +223,15 @@ async function loadFeeds(){
   const box = document.getElementById('feeds');
   if(!r.ok){ box.innerHTML='<p>Ошибка: '+r.error+'</p>'; return; }
   if(!r.feeds.length){ box.innerHTML='<div class="card">📭 Лент пока нет. Нажми «Добавить ленту».</div>'; return; }
-  box.innerHTML = r.feeds.map(f=>`
+  box.innerHTML = r.feeds.map(f=>{
+    const err = f._meta && +f._meta.errors || 0;
+    const dot = !f.enabled ? '#555' : (err > 0 ? '#ed4245' : '#3ba55c');
+    return `
     <div class="feed">
-      <span class="dot" style="background:${f.enabled?'#3ba55c':'#555'}"></span>
-      <small>${f.id} · каждые ${f.interval_sec||'общ.'}с · макс ${f.max_posts}</small>
+      <span class="dot" style="background:${dot}" title="${err>0? ('ошибок подряд: '+err) : (f.enabled? 'работает':'выключена')}"></span>
+      <small>${f.id} · каждые ${f.interval_sec||'общ.'}с · макс ${f.max_posts}${f.post_mode==='digest'?' · 🍮 дайджест':''}</small>
       <h4>${esc(f.name)}</h4>
-      <small>📰 ${esc(f.rss_url)}<br>💬 канал ${esc(f.channel_id)} ${f.mention?('· '+esc(f.mention)):''}${f.webhook_url?'<br>🔗 webhook':''}${f.thread_id?'<br>🧵 ветка':''}</small>
+      <small>📰 ${esc(f.rss_url)}<br>💬 канал ${esc(f.channel_id)} ${f.mention?('· '+esc(f.mention)):''}${f.webhook_url?'<br>🔗 webhook':''}${f.thread_id?'<br>🧵 ветка':''}${err>0?('<br>🔴 ошибок подряд: '+err):''}${f._meta&&f._meta.last_post?('<br>🕐 последний пост: '+esc(String(f._meta.last_post).replace('T',' ').slice(0,19))):''}</small>
       <div class="row">
         <button onclick="editFeed('${f.id}')">✏️</button>
         <button class="ghost" onclick="previewFeed('${f.id}')">👁</button>
@@ -202,12 +241,15 @@ async function loadFeeds(){
         <button class="danger" onclick="delFeed('${f.id}')">🗑</button>
       </div>
       <div id="pv-${f.id}"></div>
-    </div>`).join('');
+    </div>`;}).join('');
   window._feeds = Object.fromEntries(r.feeds.map(f=>[f.id,f]));
 }
 function esc(s){ return String(s??'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
-function openModal(){ document.getElementById('m_title').textContent='Новая лента'; ['f_id','f_name','f_url','f_channel','f_mention','f_inc','f_exc','f_webhook','f_thread'].forEach(id=>document.getElementById(id).value='');
+function openModal(){ document.getElementById('m_title').textContent='Новая лента'; ['f_id','f_name','f_url','f_channel','f_mention','f_inc','f_exc','f_webhook','f_thread','f_incre','f_excre'].forEach(id=>document.getElementById(id).value='');
   document.getElementById('f_ts').checked=true;
+  document.getElementById('f_mode').value='instant';
+  document.getElementById('f_digint').value=3600;
+  document.getElementById('f_digmax').value=5;
   document.getElementById('preview').innerHTML=''; document.getElementById('modal').classList.add('open'); }
 function closeModal(){ document.getElementById('modal').classList.remove('open'); }
 function editFeed(id){ const f = window._feeds[id]; if(!f) return;
@@ -219,6 +261,11 @@ function editFeed(id){ const f = window._feeds[id]; if(!f) return;
   document.getElementById('f_max').value=f.max_posts||3; document.getElementById('f_inc').value=f.include_keywords||'';
   document.getElementById('f_exc').value=f.exclude_keywords||'';
   document.getElementById('f_webhook').value=f.webhook_url||''; document.getElementById('f_thread').value=f.thread_id||'';
+  document.getElementById('f_mode').value=f.post_mode||'instant';
+  document.getElementById('f_digint').value=f.digest_interval||3600;
+  document.getElementById('f_digmax').value=f.digest_max||5;
+  document.getElementById('f_incre').value=f.include_regex||'';
+  document.getElementById('f_excre').value=f.exclude_regex||'';
   document.getElementById('f_enabled').checked=!!f.enabled; document.getElementById('f_embed').checked=!!f.use_embed;
   document.getElementById('f_img').checked=!!f.show_image; document.getElementById('f_author').checked=!!f.show_author;
   document.getElementById('f_ts').checked=f.show_timestamp!==false;
@@ -229,6 +276,8 @@ async function saveFeed(){
     color:val('f_color'), interval_sec:+val('f_interval')||0, template:document.getElementById('f_template').value,
     mention:val('f_mention'), max_posts:+val('f_max')||3, include_keywords:val('f_inc'), exclude_keywords:val('f_exc'),
     webhook_url:val('f_webhook'), thread_id:val('f_thread'),
+    post_mode:val('f_mode'), digest_interval:+val('f_digint')||3600, digest_max:+val('f_digmax')||5,
+    include_regex:val('f_incre'), exclude_regex:val('f_excre'),
     enabled:document.getElementById('f_enabled').checked, use_embed:document.getElementById('f_embed').checked,
     show_image:document.getElementById('f_img').checked, show_author:document.getElementById('f_author').checked,
     show_timestamp:document.getElementById('f_ts').checked};
@@ -288,12 +337,17 @@ async function loadSettings(){ const r = await api('/api/config'); if(!r.ok) ret
   document.getElementById('s_qend').value=qh.end??8;
   const qn=document.getElementById('s_qnow');
   if(qn) qn.textContent = r.config.quiet_now? '→ Сейчас тихие часы: публикация отложена.' : '';
+  const al=r.config.alerts||{};
+  document.getElementById('s_alch').value=al.channel_id||'';
+  document.getElementById('s_aln').value=al.after_failures??3;
 }
 async function saveSettings(){ const body={default_interval:+document.getElementById('s_interval').value||300,
   max_summary_length:+document.getElementById('s_maxlen').value||300, guild_id:document.getElementById('s_guild').value.trim()||null,
   web:{port:+document.getElementById('s_port').value||8000},
   quiet_hours:{enabled:document.getElementById('s_qenabled').checked,
-    start:+document.getElementById('s_qstart').value||0, end:+document.getElementById('s_qend').value||0}};
+    start:+document.getElementById('s_qstart').value||0, end:+document.getElementById('s_qend').value||0},
+  alerts:{channel_id:document.getElementById('s_alch').value.trim(),
+    after_failures:+document.getElementById('s_aln').value||3}};
   const wp=document.getElementById('s_webpwd').value.trim(); if(wp) body.web.password=wp;
   const tk=document.getElementById('s_token').value.trim(); if(tk) body.discord_token=tk;
   const r = await api('/api/config','PUT',body); alert(r.ok?'✅ Сохранено. Порт/токен применятся после перезапуска.':'❌ '+r.error); }

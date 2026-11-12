@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file.
 
 Format: [Keep a Changelog](https://keepachangelog.com/ru/1.1.0/), versioning: [Semantic Versioning](https://semver.org/lang/ru/).
 
+## [1.5.0] — 2026-11-12
+
+### Added
+- 🍮 Дайджест-режим ленты: копит новые записи (`data/digest.json`) и шлёт сводкой — по интервалу или раньше при N записях
+- 🚨 Алерты о сломанных лентах: после N падений подряд бот предупреждает в настроенный канал (`alerts` в конфиге + UI)
+- 🔎 Фильтры по регулярным выражениям (`include_regex` / `exclude_regex`) в UI и API
+- 📊 График публикаций за 7 дней в веб-панели (`/api/stats/history`)
+- 🟢/🔴 Статус ленты в списке: ошибки подряд, дата последнего поста, значок дайджеста
+
+### Fixed
+- 🐛 Критический баг импорта `rss_core.py`: `STATS_PATH` использовал `os`/`DATA_DIR` до их определения (бот не стартовал бы на чистом запуске)
+
+### Changed
+- Обновлены README (RU/EN), config.example.json, баннер
+
 ## [1.4.0] — 2026-11-08
 
 ### Added

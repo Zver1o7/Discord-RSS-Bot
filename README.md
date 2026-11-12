@@ -8,7 +8,7 @@
 [![discord.py](https://img.shields.io/badge/discord.py-2.x-5865F2?style=flat-square&logo=discord&logoColor=white)](https://discordpy.readthedocs.io/)
 [![Flask](https://img.shields.io/badge/Flask-3.x-000000?style=flat-square&logo=flask&logoColor=white)](https://flask.palletsprojects.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.4.0-blue?style=flat-square)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue?style=flat-square)](CHANGELOG.md)
 
 > Форум/сайт RSS → красивые посты в Discord. Веб-админка в браузере, фильтры, шаблоны, слэш-команды.
 
@@ -42,6 +42,10 @@
 - **Умная синхронизация** — при первом запуске история не публикуется
 - **Тест из админки и из Discord** — быстрая проверка перед боевым включением
 - **Статистика** — счётчик публикаций, аптайм, команды `/about` и `/rss-stats`
+- **Дайджест-режим** — копить новые записи и слать одной сводкой по расписанию
+- **Алерты о поломках** — предупреждение в канал, если лента падает несколько раз подряд
+- **Фильтры по регулярке** — тонкий отбор записей (include/exclude regex)
+- **График публикаций** — 7 дней статистики прямо в панели
 - **Тихие часы** — не публиковать ночью, записи копятся и уходят утром
 - **Повтор отправки** — при сбое Discord/вебхука автоматический ретрай
 - **Поиск по логам** — фильтр прямо в панели

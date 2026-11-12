@@ -8,6 +8,10 @@
     "start": 23,
     "end": 8
   },
+  "alerts": {
+    "channel_id": "",
+    "after_failures": 3
+  },
   "web": {
     "enabled": true,
     "port": 8000,

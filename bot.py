@@ -88,6 +88,7 @@ async def post_item(bot: commands.Bot, feed: dict, item: dict, reason: str = "ne
     async def _mark_ok() -> None:
         try:
             core.inc_stat("posts")
+            core.record_post_day()
             core.set_feed_meta(str(feed.get("id", "")),
                                last_post=datetime.now(timezone.utc).isoformat(timespec="seconds"))
         except Exception:
@@ -143,6 +144,98 @@ async def post_item(bot: commands.Bot, feed: dict, item: dict, reason: str = "ne
     return False
 
 
+async def _note_fetch_error(bot: commands.Bot, cfg: dict, feed: dict, err_text: str) -> None:
+    """Считает падения ленты и шлёт алерт в настроенный канал после N ошибок."""
+    fid = str(feed.get("id"))
+    try:
+        meta = core.get_feed_meta(fid)
+        errors = int(meta.get("errors", 0) or 0) + 1
+        core.set_feed_meta(fid, errors=errors)
+    except Exception:
+        return
+    alerts = cfg.get("alerts") or {}
+    channel_id = str(alerts.get("channel_id", "") or "").strip()
+    after = max(1, int(alerts.get("after_failures", 3) or 3))
+    if not channel_id.isdigit() or errors < after or meta.get("alerted"):
+        return
+    try:
+        channel = bot.get_channel(int(channel_id))
+        if channel is None:
+            channel = await bot.fetch_channel(int(channel_id))
+        emb = discord.Embed(
+            title="⚠️ Лента недоступна",
+            color=0xED4245,
+            description=(
+                f"**{feed.get('name')}**\n`{feed.get('rss_url')}`\n\n"
+                f"{errors} проверок подряд с ошибкой:\n{str(err_text)[:400]}"
+            ),
+            timestamp=datetime.now(timezone.utc),
+        )
+        emb.set_footer(text="Discord-RSS-Bot · Zver1o7")
+        await channel.send(embed=emb)
+        core.set_feed_meta(fid, alerted=True)
+        core.log_event("ERROR", f"Алерт отправлен: {errors} ошибок подряд", fid)
+    except Exception as exc:  # noqa: BLE001
+        core.log_event("WARN", f"Не удалось отправить алерт: {exc}", fid)
+
+
+def _note_fetch_ok(feed: dict) -> None:
+    fid = str(feed.get("id"))
+    try:
+        meta = core.get_feed_meta(fid)
+        if meta.get("errors") or meta.get("alerted"):
+            core.set_feed_meta(fid, errors=0, alerted=False)
+    except Exception:
+        pass
+
+
+async def flush_digest(bot: commands.Bot, feed: dict, *, force: bool = False) -> int:
+    """Отправляет дайджест, если очередь наполнена или истёк интервал."""
+    fid = str(feed.get("id"))
+    entry = core.get_digest(fid)
+    items = entry.get("items") or []
+    if not items:
+        return 0
+    max_items = max(1, int(feed.get("digest_max", 5) or 5))
+    interval = max(60, int(feed.get("digest_interval", 3600) or 3600))
+    if force:
+        due = True
+    elif len(items) >= max_items:
+        due = True
+    else:
+        try:
+            queued = datetime.fromisoformat(str(entry.get("queued_at")))
+            due = (datetime.now(timezone.utc) - queued).total_seconds() >= interval
+        except Exception:
+            due = True
+    if not due:
+        return 0
+    lines = []
+    for it in items[:25]:
+        title = str(it.get("title", ""))[:110]
+        link = str(it.get("link", "") or "")
+        lines.append(f"• [{title}]({link})" if link else f"• {title}")
+    item = {
+        "uid": f"digest_{fid}",
+        "title": f"Дайджест · {len(items)} записей",
+        "link": str(items[0].get("link", "") or ""),
+        "summary": "\n".join(lines)[:3900],
+        "image": str(items[0].get("image", "") or ""),
+        "author": "",
+        "date": "",
+        "feed_name": str(feed.get("name", "")),
+    }
+    dfeed = dict(feed)
+    # в embed-режиме текст сообщения не нужен (заголовок уже в embed), в обычном — шаблон по умолчанию
+    dfeed["template"] = " " if feed.get("use_embed", True) else ""
+    ok = await post_item(bot, dfeed, item, reason="digest")
+    if ok:
+        core.clear_digest(fid)
+        core.log_event("INFO", f"Дайджест отправлен ({len(items)} записей)", fid)
+        return 1
+    return 0
+
+
 async def check_feed(bot: commands.Bot, feed: dict, *, first_run: bool = False, force_post: bool = False) -> int:
     """Проверяет одну ленту. Возвращает число опубликованных."""
     fid = str(feed.get("id"))
@@ -165,9 +258,12 @@ async def check_feed(bot: commands.Bot, feed: dict, *, first_run: bool = False, 
         pass
     if err and not items:
         core.log_event("ERROR", f"RSS ошибка: {err}", fid)
+        await _note_fetch_error(bot, cfg, feed, str(err))
         return 0
     if err:
         core.log_event("WARN", err, fid)
+    else:
+        _note_fetch_ok(feed)
 
     seen = core.load_seen()
     known = set(seen.get(fid, []))
@@ -182,12 +278,25 @@ async def check_feed(bot: commands.Bot, feed: dict, *, first_run: bool = False, 
     for it in items:
         if it["uid"] in known:
             continue
-        if not core.match_filters(it, feed.get("include_keywords", ""), feed.get("exclude_keywords", "")):
+        if not core.match_filters(it, feed.get("include_keywords", ""), feed.get("exclude_keywords", ""),
+                                  feed.get("include_regex", ""), feed.get("exclude_regex", "")):
             known.add(it["uid"])
             continue
         fresh.append(it)
     # RSS отдаёт от новых к старым — постим снизу вверх чтобы порядок сохранился
     fresh = fresh[::-1][: int(feed.get("max_posts", 3) or 3)]
+
+    # режим «дайджест»: копим записи и шлём сводку пачкой
+    if str(feed.get("post_mode", "instant")) == "digest":
+        if fresh and (force_post or not first_run):
+            n = core.queue_digest(fid, fresh)
+            core.log_event("INFO", f"Дайджест: +{len(fresh)} в очередь (всего {n})", fid)
+        posted = await flush_digest(bot, feed, force=force_post) if (force_post or not first_run) else 0
+        for it in fresh:
+            known.add(it["uid"])
+        seen[fid] = list(known)[-200:]
+        core.save_seen(seen)
+        return posted
 
     posted = 0
     for it in fresh:
@@ -349,7 +458,11 @@ def build_bot() -> RSSBot:
             return
         await inter.response.defer(ephemeral=True)
         n = await check_feed(bot, feed)
-        await inter.followup.send(f"✅ Проверка готова. Опубликовано: **{n}**.", ephemeral=True)
+        extra = ""
+        if str(feed.get("post_mode", "instant")) == "digest":
+            q = core.get_digest(str(feed_id))
+            extra = f" · в очереди дайджеста: **{len(q.get('items') or [])}**"
+        await inter.followup.send(f"✅ Проверка готова. Опубликовано: **{n}**{extra}.", ephemeral=True)
 
     @bot.tree.command(name="rss-info", description="Информация о ленте")
     @app_commands.describe(feed_id="ID ленты (смотри /rss-list)")
@@ -373,6 +486,13 @@ def build_bot() -> RSSBot:
         emb.add_field(name="Embed", value="Да" if feed.get("use_embed", True) else "Нет", inline=True)
         emb.add_field(name="Фильтр «включить»", value=inc, inline=False)
         emb.add_field(name="Фильтр «исключить»", value=exc, inline=False)
+        if str(feed.get("post_mode", "instant")) == "digest":
+            q = core.get_digest(str(feed_id))
+            emb.add_field(name="🍮 Дайджест",
+                          value=f"в очереди: **{len(q.get('items') or [])}** · "
+                                f"интервал {feed.get('digest_interval', 3600)}с · "
+                                f"порог {feed.get('digest_max', 5)} записей",
+                          inline=False)
         emb.set_footer(text=f"by {core.__author__}")
         await inter.response.send_message(embed=emb, ephemeral=True)
 

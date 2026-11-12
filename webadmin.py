@@ -83,7 +83,15 @@ def create_app() -> Flask:
     @require_auth
     def feeds_list():
         cfg = core.load_config()
-        return jsonify({"ok": True, "feeds": cfg.get("feeds", [])})
+        feeds = []
+        for f in cfg.get("feeds", []):
+            ff = dict(f)
+            try:
+                ff["_meta"] = core.get_feed_meta(str(f.get("id", "")))
+            except Exception:
+                ff["_meta"] = {}
+            feeds.append(ff)
+        return jsonify({"ok": True, "feeds": feeds})
 
     @app.post("/api/feeds")
     @require_auth
@@ -99,7 +107,8 @@ def create_app() -> Flask:
         feed = core.default_feed(url, channel, str(body.get("name", "") or "").strip())
         for k in ("enabled", "interval_sec", "color", "template", "use_embed",
                   "show_image", "show_author", "show_timestamp", "mention", "include_keywords",
-                  "exclude_keywords", "max_posts", "webhook_url", "thread_id"):
+                  "exclude_keywords", "max_posts", "webhook_url", "thread_id",
+                  "post_mode", "digest_interval", "digest_max", "include_regex", "exclude_regex"):
             if k in body:
                 feed[k] = body[k]
         # id уникален
@@ -124,7 +133,8 @@ def create_app() -> Flask:
         for k in ("name", "rss_url", "channel_id", "enabled", "interval_sec", "color",
                   "template", "use_embed", "show_image", "show_author", "show_timestamp",
                   "mention", "include_keywords", "exclude_keywords", "max_posts",
-                  "webhook_url", "thread_id"):
+                  "webhook_url", "thread_id", "post_mode", "digest_interval", "digest_max",
+                  "include_regex", "exclude_regex"):
             if k in body:
                 feed[k] = body[k]
         core.save_config(cfg)
@@ -198,6 +208,16 @@ def create_app() -> Flask:
                     pass
         if body.get("discord_token"):
             cfg["discord_token"] = body["discord_token"]
+        if isinstance(body.get("alerts"), dict):
+            al = cfg.setdefault("alerts", {"channel_id": "", "after_failures": 3})
+            a = body["alerts"]
+            if "channel_id" in a:
+                al["channel_id"] = str(a["channel_id"] or "").strip()
+            if "after_failures" in a:
+                try:
+                    al["after_failures"] = max(1, int(a["after_failures"]))
+                except (TypeError, ValueError):
+                    pass
         core.save_config(cfg)
         return jsonify({"ok": True})
 
@@ -206,6 +226,15 @@ def create_app() -> Flask:
     def logs():
         q = str(request.args.get("q", "") or "")
         return jsonify({"ok": True, "logs": core.recent_logs(150, q), "query": q})
+
+    @app.get("/api/stats/history")
+    @require_auth
+    def stats_history():
+        try:
+            days = max(1, min(30, int(request.args.get("days", 7) or 7)))
+        except (TypeError, ValueError):
+            days = 7
+        return jsonify({"ok": True, "history": core.get_history(days)})
 
     @app.post("/api/feeds/<feed_id>/preview")
     @require_auth
@@ -219,7 +248,8 @@ def create_app() -> Flask:
         items, err = core.fetch_feed_items(feed.get("rss_url", ""), feed.get("name", ""), max_len, 8)
         shown = []
         for it in items:
-            ok = core.match_filters(it, feed.get("include_keywords", ""), feed.get("exclude_keywords", ""))
+            ok = core.match_filters(it, feed.get("include_keywords", ""), feed.get("exclude_keywords", ""),
+                                    feed.get("include_regex", ""), feed.get("exclude_regex", ""))
             shown.append({**it, "passes_filter": ok,
                           "rendered": core.render_template(feed.get("template", ""), it)})
         return jsonify({"ok": True, "items": shown, "warning": err})
